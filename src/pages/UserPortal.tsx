@@ -16,6 +16,12 @@ const KIND_COLORS: Record<string, string> = {
   procedural: 'var(--color-warning)',
 }
 
+const VISIBILITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
+  personal: { bg: 'var(--bg-muted)', color: 'var(--text-secondary)', label: '🔒 Personal' },
+  namespace: { bg: 'var(--color-info)', color: 'white', label: '👥 Namespace' },
+  org: { bg: 'var(--color-success)', color: 'white', label: '🌐 Org' },
+}
+
 export default function UserPortal() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-me'],
@@ -33,7 +39,7 @@ export default function UserPortal() {
   })
 
   return (
-    <PageLayout title="My Portal" description="Your memories and namespaces">
+    <PageLayout title="My Portal" description="Your memories — personal ones plus shared namespace and org memories">
 
       {/* Profile */}
       <Card className="max-w-sm">
@@ -129,6 +135,7 @@ export default function UserPortal() {
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Namespace</TableHead>
+                  <TableHead>Visibility</TableHead>
                   <TableHead>Kind</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
@@ -142,6 +149,16 @@ export default function UserPortal() {
                     <TableCell>
                       <Badge variant="outline" className="text-xs font-mono">
                         {mem.namespace}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        style={{
+                          background: VISIBILITY_STYLES[mem.visibility]?.bg ?? 'var(--bg-muted)',
+                          color: VISIBILITY_STYLES[mem.visibility]?.color ?? 'var(--text-secondary)',
+                        }}
+                      >
+                        {VISIBILITY_STYLES[mem.visibility]?.label ?? mem.visibility}
                       </Badge>
                     </TableCell>
                     <TableCell>

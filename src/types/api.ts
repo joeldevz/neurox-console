@@ -66,6 +66,7 @@ export interface Memory {
   content: string;
   kind: 'episodic' | 'semantic' | 'procedural';
   observation_type: string;
+  visibility: 'personal' | 'namespace' | 'org';
   confidence: number;
   retention: string;
   importance: number;

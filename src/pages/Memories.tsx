@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,18 +36,26 @@ const KIND_COLORS: Record<Memory['kind'], string> = {
   procedural: 'var(--color-warning)',
 }
 
+const VISIBILITY_STYLES = {
+  personal: { bg: 'var(--bg-muted)', color: 'var(--text-secondary)', label: '🔒 Personal' },
+  namespace: { bg: 'var(--color-info)', color: 'white', label: '👥 Namespace' },
+  org: { bg: 'var(--color-success)', color: 'white', label: '🌐 Org' },
+}
+
 export default function Memories() {
   const [search, setSearch] = useState('')
   const [nsFilter, setNsFilter] = useState('')
+  const [visibility, setVisibility] = useState('all')
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['memories', search, nsFilter],
+    queryKey: ['memories', search, nsFilter, visibility],
     queryFn: () =>
       api.listMemories({
         limit: 100,
         query: search || undefined,
         namespace: nsFilter || undefined,
+        visibility: visibility === 'all' ? undefined : visibility,
       }),
     placeholderData: prev => prev,
   })
@@ -69,6 +84,17 @@ export default function Memories() {
           value={nsFilter}
           onChange={e => setNsFilter(e.target.value)}
         />
+        <Select value={visibility} onValueChange={setVisibility}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="Visibility" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="personal">🔒 Personal</SelectItem>
+            <SelectItem value="namespace">👥 Namespace</SelectItem>
+            <SelectItem value="org">🌐 Org</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {isLoading ? (
@@ -83,6 +109,7 @@ export default function Memories() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Namespace</TableHead>
+                <TableHead>Visibility</TableHead>
                 <TableHead>Kind</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Importance</TableHead>
@@ -102,6 +129,16 @@ export default function Memories() {
                   <TableCell>
                     <Badge variant="outline" className="text-xs font-mono">
                       {mem.namespace}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      style={{
+                        background: VISIBILITY_STYLES[mem.visibility].bg,
+                        color: VISIBILITY_STYLES[mem.visibility].color,
+                      }}
+                    >
+                      {VISIBILITY_STYLES[mem.visibility].label}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -152,6 +189,16 @@ export default function Memories() {
               <Badge variant="outline" className="text-xs font-mono">
                 NS: {selectedMemory?.namespace}
               </Badge>
+              {selectedMemory?.visibility && (
+                <Badge
+                  style={{
+                    background: VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].bg,
+                    color: VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].color,
+                  }}
+                >
+                  {VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].label}
+                </Badge>
+              )}
               {selectedMemory?.kind && (
                 <Badge
                   style={{

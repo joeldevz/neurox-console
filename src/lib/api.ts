@@ -117,7 +117,7 @@ class ApiClient {
   }
 
   // Memories
-  async listMemories(params: { limit?: number; offset?: number; namespace?: string; query?: string } = {}): Promise<{ memories: Memory[]; count: number }> {
+  async listMemories(params: { limit?: number; offset?: number; namespace?: string; query?: string; visibility?: string } = {}): Promise<{ memories: Memory[]; count: number }> {
     return this.request(`/api/admin/memories${this.qs(params as Record<string, string | number | undefined>)}`)
   }
   async getMemory(id: string): Promise<Memory> {
