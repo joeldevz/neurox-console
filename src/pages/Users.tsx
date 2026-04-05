@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
@@ -71,13 +72,23 @@ export default function Users() {
       setOpen(false)
       setEmail('')
       setRole('member')
+      toast.success('User created')
+    },
+    onError: () => {
+      toast.error('Failed to create user')
     },
   })
 
   const patchMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
       api.patchUser(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['users'] })
+      toast.success('User updated')
+    },
+    onError: () => {
+      toast.error('Failed to update user')
+    },
   })
 
   return (

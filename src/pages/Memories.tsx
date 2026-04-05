@@ -13,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { api } from '@/lib/api'
 import { formatDate, truncate } from '@/lib/utils'
 import type { Memory } from '@/types/api'
@@ -26,6 +32,7 @@ const KIND_COLORS: Record<Memory['kind'], string> = {
 export default function Memories() {
   const [search, setSearch] = useState('')
   const [nsFilter, setNsFilter] = useState('')
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['memories', search, nsFilter],
@@ -84,7 +91,11 @@ export default function Memories() {
             </TableHeader>
             <TableBody>
               {data?.memories.map(mem => (
-                <TableRow key={mem.id}>
+                <TableRow
+                  key={mem.id}
+                  className="cursor-pointer hover:bg-[var(--bg-muted)]"
+                  onClick={() => setSelectedMemory(mem)}
+                >
                   <TableCell className="font-medium max-w-xs">
                     <span title={mem.title}>{truncate(mem.title, 50)}</span>
                   </TableCell>
@@ -118,6 +129,108 @@ export default function Memories() {
           </Table>
         </div>
       )}
+
+      <Dialog
+        open={selectedMemory !== null}
+        onOpenChange={open => !open && setSelectedMemory(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedMemory?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div
+              className="text-sm whitespace-pre-wrap font-mono p-4 rounded-md"
+              style={{
+                background: 'var(--bg-muted)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              {selectedMemory?.content}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-xs font-mono">
+                NS: {selectedMemory?.namespace}
+              </Badge>
+              {selectedMemory?.kind && (
+                <Badge
+                  style={{
+                    background:
+                      KIND_COLORS[selectedMemory.kind as Memory['kind']],
+                    color: 'white',
+                  }}
+                >
+                  {selectedMemory.kind}
+                </Badge>
+              )}
+              {selectedMemory?.observation_type && (
+                <Badge variant="secondary">
+                  {selectedMemory.observation_type}
+                </Badge>
+              )}
+            </div>
+            {selectedMemory?.tags && selectedMemory.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {selectedMemory.tags.map(tag => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {selectedMemory?.files && selectedMemory.files.length > 0 && (
+              <div className="space-y-1">
+                <p
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Files:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedMemory.files.map(file => (
+                    <Badge
+                      key={file}
+                      variant="outline"
+                      className="text-xs font-mono"
+                    >
+                      {file}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div
+              className="grid grid-cols-2 gap-4 text-sm pt-4 border-t"
+              style={{ borderColor: 'var(--border-default)' }}
+            >
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Confidence: </span>
+                <span>{selectedMemory?.confidence.toFixed(2)}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Importance: </span>
+                <span>{selectedMemory?.importance.toFixed(2)}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Created: </span>
+                <span>
+                  {selectedMemory?.created_at
+                    ? formatDate(selectedMemory.created_at)
+                    : '—'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Updated: </span>
+                <span>
+                  {selectedMemory?.updated_at
+                    ? formatDate(selectedMemory.updated_at)
+                    : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }

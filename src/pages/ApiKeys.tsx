@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Plus, Copy, Trash2 } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
@@ -46,12 +47,22 @@ export default function ApiKeys() {
       setCreateOpen(false)
       setKeyName('')
       setShowKeyOpen(true)
+      toast.success('API key created')
+    },
+    onError: () => {
+      toast.error('Failed to create key')
     },
   })
 
   const revokeMutation = useMutation({
     mutationFn: (id: string) => api.revokeApiKey(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['api-keys'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['api-keys'] })
+      toast.success('Key revoked')
+    },
+    onError: () => {
+      toast.error('Failed to revoke key')
+    },
   })
 
   return (
@@ -107,11 +118,12 @@ export default function ApiKeys() {
             <Button
               size="icon"
               variant="outline"
-              onClick={() =>
+              onClick={() => {
                 void navigator.clipboard.writeText(
                   createdKey?.plaintext_key ?? ''
                 )
-              }
+                toast.success('Copied to clipboard')
+              }}
             >
               <Copy className="w-4 h-4" />
             </Button>

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Save } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +21,13 @@ export default function Organization() {
 
   const mutation = useMutation({
     mutationFn: (data: { name: string }) => api.patchOrg(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['org'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['org'] })
+      toast.success('Organization updated')
+    },
+    onError: () => {
+      toast.error('Failed to save changes')
+    },
   })
 
   if (isLoading) {
@@ -76,16 +83,6 @@ export default function Organization() {
             <Save className="w-4 h-4 mr-2" />
             {mutation.isPending ? 'Saving…' : 'Save Changes'}
           </Button>
-          {mutation.isSuccess && (
-            <p className="text-sm" style={{ color: 'var(--color-success)' }}>
-              Saved successfully.
-            </p>
-          )}
-          {mutation.isError && (
-            <p className="text-sm" style={{ color: 'var(--color-danger)' }}>
-              {mutation.error.message}
-            </p>
-          )}
         </CardContent>
       </Card>
     </PageLayout>

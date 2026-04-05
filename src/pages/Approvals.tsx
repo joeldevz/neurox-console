@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { CheckCircle, XCircle } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
@@ -26,12 +27,24 @@ export default function Approvals() {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => api.approveApproval(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['approvals'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['approvals'] })
+      toast.success('Approved')
+    },
+    onError: () => {
+      toast.error('Failed to approve')
+    },
   })
 
   const rejectMutation = useMutation({
     mutationFn: (id: string) => api.rejectApproval(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['approvals'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['approvals'] })
+      toast.success('Rejected')
+    },
+    onError: () => {
+      toast.error('Failed to reject')
+    },
   })
 
   return (
