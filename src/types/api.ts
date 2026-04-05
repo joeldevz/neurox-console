@@ -117,3 +117,23 @@ export interface Paginated<T> {
 export interface ApiError {
   error: string;
 }
+
+export interface UserProfile {
+  id: string;
+  org_id: string;
+  email: string;
+  name: string | null;
+  role: 'owner' | 'admin' | 'memory_manager' | 'member';
+  status: string;
+  created_at: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    org_id: string;
+  };
+}

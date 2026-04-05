@@ -59,6 +59,8 @@ export default function Users() {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<User['role']>('member')
+  const [passwordUserId, setPasswordUserId] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['users'],
@@ -88,6 +90,19 @@ export default function Users() {
     },
     onError: () => {
       toast.error('Failed to update user')
+    },
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) =>
+      api.setUserPassword(userId, password),
+    onSuccess: () => {
+      setPasswordUserId(null)
+      setNewPassword('')
+      toast.success('Password set successfully')
+    },
+    onError: () => {
+      toast.error('Failed to set password')
     },
   })
 
@@ -216,6 +231,14 @@ export default function Users() {
                         >
                           Suspend
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setPasswordUserId(user.id)
+                            setNewPassword('')
+                          }}
+                        >
+                          Set Password
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -225,6 +248,39 @@ export default function Users() {
           </Table>
         </div>
       )}
+
+      {/* Set Password Dialog */}
+      <Dialog open={passwordUserId !== null} onOpenChange={open => { if (!open) setPasswordUserId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="At least 8 characters"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={passwordMutation.isPending || newPassword.length < 8}
+              onClick={() => {
+                if (passwordUserId) {
+                  passwordMutation.mutate({ userId: passwordUserId, password: newPassword })
+                }
+              }}
+            >
+              {passwordMutation.isPending ? 'Saving…' : 'Set Password'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }

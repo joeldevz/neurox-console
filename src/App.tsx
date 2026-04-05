@@ -13,6 +13,7 @@ import ApiKeys from '@/pages/ApiKeys'
 import Namespaces from '@/pages/Namespaces'
 import Memories from '@/pages/Memories'
 import Approvals from '@/pages/Approvals'
+import UserPortal from '@/pages/UserPortal'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ function AppWithAuth() {
         <Route path="/namespaces" element={<Namespaces />} />
         <Route path="/memories" element={<Memories />} />
         <Route path="/approvals" element={<Approvals />} />
+        <Route path="/portal" element={<UserPortal />} />
       </Route>
 
       {/* Fallback */}

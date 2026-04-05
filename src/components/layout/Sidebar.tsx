@@ -8,11 +8,13 @@ import {
   Brain,
   CheckSquare,
   LogOut,
+  User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 
 const NAV_ITEMS = [
+  { to: '/portal', icon: User, label: 'My Portal' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/organization', icon: Building2, label: 'Organization' },
   { to: '/users', icon: Users, label: 'Users' },

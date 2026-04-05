@@ -2,6 +2,7 @@ import type {
   Me, Org, User, ApiKey, ApiKeyCreated,
   Namespace, NamespaceTreeNode, Memory, Approval,
   DashboardStats, ApiError,
+  UserProfile, LoginResponse,
 } from '@/types/api'
 
 const BASE = import.meta.env.VITE_API_URL || ''
@@ -32,17 +33,18 @@ class ApiClient {
     this.baseUrl = baseUrl
   }
 
-  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = getToken()
+  private async request<T>(path: string, options: RequestInit & { skipAuth?: boolean } = {}): Promise<T> {
+    const { skipAuth, ...fetchOptions } = options
+    const token = skipAuth ? null : getToken()
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers as Record<string, string>,
+      ...fetchOptions.headers as Record<string, string>,
     }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
 
-    const res = await fetch(`${this.baseUrl}${path}`, { ...options, headers })
+    const res = await fetch(`${this.baseUrl}${path}`, { ...fetchOptions, headers })
     const body = await res.json()
 
     if (!res.ok) {
@@ -139,6 +141,34 @@ class ApiClient {
   // Dashboard
   async dashboardStats(): Promise<DashboardStats> {
     return this.request('/api/admin/dashboard/stats')
+  }
+
+  // Public auth
+  async loginWithPassword(email: string, password: string): Promise<LoginResponse> {
+    return this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+      skipAuth: true,
+    })
+  }
+
+  // Admin: set user password
+  async setUserPassword(userId: string, password: string): Promise<{ ok: boolean }> {
+    return this.request('/api/auth/set-password', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, password }),
+    })
+  }
+
+  // User portal
+  async userMe(): Promise<UserProfile> {
+    return this.request('/api/user/me')
+  }
+  async userMemories(params: { limit?: number; offset?: number; namespace?: string } = {}): Promise<{ memories: Memory[]; count: number }> {
+    return this.request(`/api/user/memories${this.qs(params as Record<string, string | number | undefined>)}`)
+  }
+  async userNamespaces(): Promise<{ namespaces: Namespace[]; count: number }> {
+    return this.request('/api/user/namespaces')
   }
 }
 
