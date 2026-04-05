@@ -127,7 +127,7 @@ export default function Namespaces() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listQuery.data?.namespaces.map(ns => (
+                {(listQuery.data?.namespaces ?? []).map(ns => (
                   <TableRow key={ns.id}>
                     <TableCell className="font-medium">{ns.name}</TableCell>
                     <TableCell

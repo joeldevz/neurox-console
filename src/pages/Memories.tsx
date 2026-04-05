@@ -90,7 +90,7 @@ export default function Memories() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.memories.map(mem => (
+              {(data?.memories ?? []).map(mem => (
                 <TableRow
                   key={mem.id}
                   className="cursor-pointer hover:bg-[var(--bg-muted)]"

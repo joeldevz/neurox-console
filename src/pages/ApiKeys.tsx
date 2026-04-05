@@ -151,7 +151,7 @@ export default function ApiKeys() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.keys.map(key => (
+              {(data?.keys ?? []).map(key => (
                 <TableRow key={key.id}>
                   <TableCell className="font-medium">{key.name}</TableCell>
                   <TableCell className="font-mono text-sm">

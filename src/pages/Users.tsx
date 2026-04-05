@@ -176,7 +176,7 @@ export default function Users() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.users.map(user => (
+              {(data?.users ?? []).map(user => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>

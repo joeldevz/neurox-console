@@ -54,7 +54,7 @@ export default function Approvals() {
     >
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
-      ) : data?.approvals.length === 0 ? (
+      ) : (data?.approvals ?? []).length === 0 ? (
         <div
           className="text-center py-16"
           style={{ color: 'var(--text-muted)' }}
@@ -79,7 +79,7 @@ export default function Approvals() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.approvals.map(appr => (
+              {(data?.approvals ?? []).map(appr => (
                 <TableRow key={appr.id}>
                   <TableCell className="font-mono text-xs">
                     {appr.memory_id.slice(0, 12)}…
