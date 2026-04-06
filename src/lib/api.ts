@@ -2,7 +2,7 @@ import type {
   Me, Org, User, ApiKey, ApiKeyCreated,
   Namespace, NamespaceTreeNode, Memory, Approval,
   DashboardStats, ApiError,
-  UserProfile, LoginResponse,
+  UserProfile, LoginResponse, OAuthToken,
 } from '@/types/api'
 
 const BASE = import.meta.env.VITE_API_URL || ''
@@ -126,6 +126,23 @@ class ApiClient {
   async searchMemories(data: { query: string; namespaces?: string[]; limit?: number }): Promise<{ results: (Memory & { score: number })[]; count: number }> {
     return this.request('/api/admin/memories/search', { method: 'POST', body: JSON.stringify(data) })
   }
+  async createMemory(data: {
+    namespace: string
+    title: string
+    content: string
+    kind: 'episodic' | 'semantic' | 'procedural'
+    observation_type: string
+    visibility: 'personal' | 'namespace' | 'org'
+    confidence?: number
+    importance?: number
+    retention?: string
+    tags?: string[]
+    files?: string[]
+    topic_key?: string
+    source?: string
+  }): Promise<Memory> {
+    return this.request('/api/admin/memories', { method: 'POST', body: JSON.stringify(data) })
+  }
 
   // Approvals
   async listApprovals(status = 'pending', limit = 50): Promise<{ approvals: Approval[]; count: number }> {
@@ -169,6 +186,11 @@ class ApiClient {
   }
   async userNamespaces(): Promise<{ namespaces: Namespace[]; count: number }> {
     return this.request('/api/user/namespaces')
+  }
+
+  // OAuth tokens
+  async listOAuthTokens(): Promise<{ tokens: OAuthToken[]; count: number }> {
+    return this.request('/api/admin/oauth/tokens')
   }
 }
 
