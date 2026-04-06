@@ -14,6 +14,7 @@ import Namespaces from '@/pages/Namespaces'
 import Memories from '@/pages/Memories'
 import Approvals from '@/pages/Approvals'
 import UserPortal from '@/pages/UserPortal'
+import ConnectClaude from '@/pages/ConnectClaude'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ function AppWithAuth() {
         <Route path="/memories" element={<Memories />} />
         <Route path="/approvals" element={<Approvals />} />
         <Route path="/portal" element={<UserPortal />} />
+        <Route path="/connect-claude" element={<ConnectClaude />} />
       </Route>
 
       {/* Fallback */}

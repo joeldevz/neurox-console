@@ -9,6 +9,7 @@ import {
   CheckSquare,
   LogOut,
   User,
+  Plug,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { to: '/namespaces', icon: FolderTree, label: 'Namespaces' },
   { to: '/memories', icon: Brain, label: 'Memories' },
   { to: '/approvals', icon: CheckSquare, label: 'Approvals' },
+  { to: '/connect-claude', icon: Plug, label: 'Connect Claude' },
 ] as const
 
 export function Sidebar() {
