@@ -173,7 +173,7 @@ export default function ApiKeys() {
                       <Badge
                         style={{
                           background: 'var(--color-success)',
-                          color: 'white',
+                          color: 'var(--text-inverse)',
                         }}
                       >
                         Active

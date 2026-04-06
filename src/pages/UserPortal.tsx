@@ -18,8 +18,8 @@ const KIND_COLORS: Record<string, string> = {
 
 const VISIBILITY_STYLES: Record<string, { bg: string; color: string; label: string }> = {
   personal: { bg: 'var(--bg-muted)', color: 'var(--text-secondary)', label: '🔒 Personal' },
-  namespace: { bg: 'var(--color-info)', color: 'white', label: '👥 Namespace' },
-  org: { bg: 'var(--color-success)', color: 'white', label: '🌐 Org' },
+  namespace: { bg: 'var(--color-info)', color: 'var(--text-inverse)', label: '👥 Namespace' },
+  org: { bg: 'var(--color-success)', color: 'var(--text-inverse)', label: '🌐 Org' },
 }
 
 export default function UserPortal() {
@@ -162,7 +162,7 @@ export default function UserPortal() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge style={{ background: KIND_COLORS[mem.kind] ?? 'var(--text-muted)', color: 'white' }}>
+                      <Badge style={{ background: KIND_COLORS[mem.kind] ?? 'var(--text-muted)', color: 'var(--text-inverse)' }}>
                         {mem.kind}
                       </Badge>
                     </TableCell>

@@ -138,3 +138,12 @@ export interface LoginResponse {
     org_id: string;
   };
 }
+
+export interface OAuthToken {
+  id: string;
+  client_id: string;
+  scope: string;
+  role: string;
+  expires_at: string;
+  created_at: string;
+}

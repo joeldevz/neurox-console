@@ -183,7 +183,7 @@ export default function Users() {
                     <Badge
                       style={{
                         background: ROLE_COLORS[user.role],
-                        color: 'white',
+                        color: 'var(--text-inverse)',
                       }}
                     >
                       {user.role}
