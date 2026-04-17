@@ -24,10 +24,10 @@
   --text-inverse:   #ffffff;
 
   /* ── BORDERS ──────────────────────────────────────────── */
-  /* Values bumped so borders are actually visible over #0a0a0a */
-  --border-subtle:  rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong:  rgba(255, 255, 255, 0.18);
+  /* Solid colors (not alpha) so they always render consistently over any surface */
+  --border-subtle:  #1f1f1f;
+  --border-default: #2a2a2a;
+  --border-strong:  #383838;
 
   /* ── BRAND ────────────────────────────────────────────── */
   --brand-400: #9984ff;
@@ -127,14 +127,14 @@
   --color-primary-foreground:     var(--text-inverse);
   --color-secondary:              var(--surface-3);
   --color-secondary-foreground:   var(--text-primary);
-  --color-muted:                  var(--surface-3);
-  --color-muted-foreground:       var(--text-tertiary);
-  --color-accent:                 var(--surface-4);
+  --color-muted:                  var(--surface-2);
+  --color-muted-foreground:       var(--text-secondary);
+  --color-accent:                 var(--surface-3);
   --color-accent-foreground:      var(--text-primary);
   --color-destructive:            var(--danger-500);
   --color-destructive-foreground: var(--text-inverse);
-  --color-border:                 var(--border-subtle);
-  --color-input:                  var(--surface-2);
+  --color-border:                 var(--border-default);
+  --color-input:                  var(--border-default);
   --color-ring:                   var(--brand-400);
   --radius:                       var(--radius-sm);
 }
