@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { FolderTree, ChevronRight, ChevronDown, Plus, Pencil, AlertCircle } from 'lucide-react'
+import { Boxes, ChevronRight, ChevronDown, Plus, Pencil, AlertCircle } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -55,7 +55,7 @@ function TreeNode({
         ) : (
           <span className="w-3 h-3 shrink-0" />
         )}
-        <FolderTree className="w-4 h-4 shrink-0 text-brand-400" />
+        <Boxes className="w-4 h-4 shrink-0 text-brand-400" />
         <span className="font-medium">{node.name}</span>
         <Badge variant="outline" className="text-xs">
           {node.node_type}
@@ -194,10 +194,32 @@ export default function Namespaces() {
   const currentError = view === 'list' ? listQuery.error : treeQuery.error
 
   return (
-    <PageLayout
-      title="Namespaces"
-      description="Browse and manage memory namespaces"
-    >
+    <PageLayout title="Namespaces">
+      {/* Hero */}
+      <section className="pb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
+              Organization
+            </p>
+            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
+              Namespaces
+            </h1>
+            <p className="text-sm text-text-secondary mt-3">
+              {namespacesCount} {namespacesCount === 1 ? 'namespace' : 'namespaces'}
+            </p>
+          </div>
+          <Button
+            onClick={handleOpenCreate}
+            disabled={!isAdmin || !capabilities.namespaceCreate.supported}
+            className="shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(124,106,247,0.35)]"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create namespace
+          </Button>
+        </div>
+      </section>
+
       {currentError && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -207,51 +229,49 @@ export default function Namespaces() {
         </Alert>
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <div></div>
-        <Button
-          onClick={handleOpenCreate}
-          disabled={!isAdmin || !capabilities.namespaceCreate.supported}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create namespace
-        </Button>
-      </div>
+      <div className="space-y-4">
+        {/* View tabs */}
+        <div className="card-surface p-3 mb-3">
+          <Tabs value={view} onValueChange={(v) => {
+            setView(v as 'list' | 'tree')
+            void qc.invalidateQueries({ queryKey: ['namespaces'] })
+          }}>
+            <TabsList>
+              <TabsTrigger value="list">List</TabsTrigger>
+              <TabsTrigger value="tree">Tree</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
-      <Tabs value={view} onValueChange={(v) => {
-        setView(v as 'list' | 'tree')
-        void qc.invalidateQueries({ queryKey: ['namespaces'] })
-      }}>
-        <TabsList>
-          <TabsTrigger value="list">List</TabsTrigger>
-          <TabsTrigger value="tree">Tree</TabsTrigger>
-        </TabsList>
+        <Tabs value={view} onValueChange={(v) => {
+          setView(v as 'list' | 'tree')
+          void qc.invalidateQueries({ queryKey: ['namespaces'] })
+        }}>
+          <TabsContent value="list">
+            {createDisabledReason && (
+              <p className="text-xs text-muted-foreground mb-4">
+                {createDisabledReason}
+              </p>
+            )}
+            {listQuery.isLoading ? (
+              <Skeleton className="h-64 w-full" />
+            ) : listQuery.error ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Unable to display namespace list. Please try again later.
+                </AlertDescription>
+              </Alert>
+            ) : !hasNamespaces ? (
+              <NamespaceEmptyState
+                onCreate={handleOpenCreate}
+                disabled={!isAdmin || !capabilities.namespaceCreate.supported}
+                disabledReason={createDisabledReason}
+              />
+            ) : (
+              <div className="card-surface overflow-hidden">
+                <Table>
 
-        <TabsContent value="list">
-
-          {createDisabledReason && (
-            <p className="text-xs text-muted-foreground mb-4">
-              {createDisabledReason}
-            </p>
-          )}
-          {listQuery.isLoading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : listQuery.error ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Unable to display namespace list. Please try again later.
-              </AlertDescription>
-            </Alert>
-          ) : !hasNamespaces ? (
-            <NamespaceEmptyState
-              onCreate={handleOpenCreate}
-              disabled={!isAdmin || !capabilities.namespaceCreate.supported}
-              disabledReason={createDisabledReason}
-            />
-          ) : (
-            <div className="rounded-md border border-border">
-              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -293,41 +313,42 @@ export default function Namespaces() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
-        </TabsContent>
+              </div>
+            )}
+          </TabsContent>
 
-        <TabsContent value="tree">
-          {createDisabledReason && (
-            <p className="text-xs text-muted-foreground mb-4">
-              {createDisabledReason}
-            </p>
-          )}
-          {treeQuery.isLoading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : treeQuery.error ? (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Unable to display namespace tree. Please try again later.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="rounded-md border p-2">
-              {treeQuery.data?.tree.map(node => (
-                <TreeNode key={node.id} node={node} onEdit={handleOpenEdit} />
-              ))}
-              {!treeQuery.data?.tree.length && (
-                <NamespaceEmptyState
-                  onCreate={handleOpenCreate}
-                  disabled={!capabilities.namespaceCreate.supported}
-                  disabledReason={createDisabledReason}
-                />
-              )}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="tree">
+            {createDisabledReason && (
+              <p className="text-xs text-muted-foreground mb-4">
+                {createDisabledReason}
+              </p>
+            )}
+            {treeQuery.isLoading ? (
+              <Skeleton className="h-64 w-full" />
+            ) : treeQuery.error ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Unable to display namespace tree. Please try again later.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="card-surface p-2">
+                {treeQuery.data?.tree.map(node => (
+                  <TreeNode key={node.id} node={node} onEdit={handleOpenEdit} />
+                ))}
+                {!treeQuery.data?.tree.length && (
+                  <NamespaceEmptyState
+                    onCreate={handleOpenCreate}
+                    disabled={!capabilities.namespaceCreate.supported}
+                    disabledReason={createDisabledReason}
+                  />
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
       <NamespaceFormDialog
         open={dialogOpen}

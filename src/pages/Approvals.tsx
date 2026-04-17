@@ -2,19 +2,12 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -96,19 +89,43 @@ export default function Approvals() {
     }
   }
 
-  return (
-    <PageLayout
-      title="Approvals"
-      description="Review and process pending memory promotion approvals"
-    >
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="approved">Approved</TabsTrigger>
-          <TabsTrigger value="rejected">Rejected</TabsTrigger>
-        </TabsList>
+  const approvalsCount = approvalsQuery.data?.approvals?.length ?? 0
 
-        <TabsContent value={tab}>
+  return (
+    <PageLayout title="Approvals">
+      {/* Hero */}
+      <section className="pb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
+              Review Queue
+            </p>
+            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
+              Approvals
+            </h1>
+            <p className="text-sm text-text-secondary mt-3">
+              {tab === 'pending' && approvalsCount === 0
+                ? 'All clear — no pending reviews.'
+                : `${approvalsCount} ${approvalsCount === 1 ? 'item' : 'items'} awaiting decision`}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="space-y-4">
+        {/* Tabs bar */}
+        <div className="card-surface p-3 mb-3">
+          <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+            <TabsList>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+          <TabsContent value={tab}>
           {approvalsQuery.isLoading ? (
             <Skeleton className="h-64 w-full" />
           ) : approvalsQuery.error ? (
@@ -118,94 +135,81 @@ export default function Approvals() {
                 Failed to load approvals: {approvalsQuery.error.message}
               </AlertDescription>
             </Alert>
-          ) : (approvalsQuery.data?.approvals ?? []).length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">
+            ) : (approvalsQuery.data?.approvals ?? []).length === 0 ? (
+            <div className="card-surface p-12 text-center">
+              <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-30 text-text-tertiary" />
+              <p className="text-sm text-text-secondary">
                 {tab === 'pending'
                   ? 'No pending approvals. All clear!'
                   : `No ${tab} approvals.`}
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Memory ID</TableHead>
-                    <TableHead>Source NS</TableHead>
-                    <TableHead>Target NS</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Requested</TableHead>
-                    {tab === 'pending' && <TableHead>Actions</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(approvalsQuery.data?.approvals ?? []).map(appr => (
-                    <TableRow key={appr.id}>
-                      <TableCell className="font-mono text-xs">
-                        {appr.memory_id.slice(0, 12)}…
-                      </TableCell>
-                      <TableCell>
+            <div className="space-y-3">
+              {(approvalsQuery.data?.approvals ?? []).map(appr => (
+                <div key={appr.id} className="card-surface-flat p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex gap-3 flex-wrap items-center mb-2">
+                        <div className="font-mono text-xs text-text-tertiary truncate">
+                          {appr.memory_id.slice(0, 12)}…
+                        </div>
                         <Badge variant="outline" className="text-xs font-mono">
                           {appr.source_ns}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                        <span className="text-text-tertiary text-xs">→</span>
                         <Badge variant="outline" className="text-xs font-mono">
                           {appr.target_ns}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={appr.score > 0.7 ? 'text-success-400' : 'text-warning-400'}
+                      </div>
+                      <div className="flex gap-4 text-sm text-text-secondary flex-wrap">
+                        <div>
+                          Score: <span className={appr.score > 0.7 ? 'text-success-400' : 'text-warning-400'}>
+                            {appr.score.toFixed(3)}
+                          </span>
+                        </div>
+                        <div>
+                          Status: <Badge className={cn(APPROVAL_STATUS_COLORS[appr.status], 'text-xs')}>
+                            {appr.status}
+                          </Badge>
+                        </div>
+                        <div className="text-text-tertiary">
+                          {formatDate(appr.requested_at)}
+                        </div>
+                      </div>
+                    </div>
+                    {tab === 'pending' && (
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleApprove(appr)}
+                          disabled={approveMutation.isPending && approveMutation.variables?.id === appr.id || rejectMutation.isPending && rejectMutation.variables?.id === appr.id}
+                          title="Approve"
+                          className="h-8 w-8"
                         >
-                          {appr.score.toFixed(3)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={APPROVAL_STATUS_COLORS[appr.status]}>
-                          {appr.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-secondary text-sm">
-                        {formatDate(appr.requested_at)}
-                      </TableCell>
-                      {tab === 'pending' && (
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleApprove(appr)}
-                              disabled={approveMutation.isPending || rejectMutation.isPending}
-                              title="Approve"
-                              className="w-4 h-4"
-                            >
-                              <CheckCircle className="w-4 h-4 text-success-400" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleReject(appr)}
-                              disabled={approveMutation.isPending || rejectMutation.isPending}
-                              title="Reject"
-                              className="w-4 h-4"
-                            >
-                              <XCircle className="w-4 h-4 text-danger-400" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          <CheckCircle className="w-4 h-4 text-success-400" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleReject(appr)}
+                          disabled={approveMutation.isPending && approveMutation.variables?.id === appr.id || rejectMutation.isPending && rejectMutation.variables?.id === appr.id}
+                          title="Reject"
+                          className="h-8 w-8"
+                        >
+                          <XCircle className="w-4 h-4 text-danger-400" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
 
       <Dialog
         open={actionState !== null && !rejectConfirm}

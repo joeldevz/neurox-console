@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { UserPlus, MoreHorizontal } from 'lucide-react'
+import { UserPlus, MoreHorizontal, Search } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -127,19 +127,24 @@ export default function Users() {
   }
 
   return (
-    <PageLayout title="Users" description="Manage organization members">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search by email or name…"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="max-w-sm"
-          />
-          <div className="flex-1" />
+    <PageLayout title="Users">
+      {/* Hero */}
+      <section className="pb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
+              Team
+            </p>
+            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
+              Users
+            </h1>
+            <p className="text-sm text-text-secondary mt-3">
+              {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'} in your organization.
+            </p>
+          </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(124,106,247,0.35)]">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Add User
               </Button>
@@ -185,11 +190,27 @@ export default function Users() {
             </DialogContent>
           </Dialog>
         </div>
+      </section>
+
+      <div className="space-y-4">
+        {/* Filter bar */}
+        <div className="card-surface p-3 mb-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none z-10" />
+            <input
+              type="text"
+              className="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-3 ring-1 ring-border-default text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-brand-400 focus:ring-2 transition-shadow"
+              placeholder="Search by email or name…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
 
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
-          <div className="rounded-md border border-border-default">
+          <div className="card-surface overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

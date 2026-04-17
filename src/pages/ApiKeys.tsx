@@ -99,32 +99,28 @@ export default function ApiKeys() {
   })
 
   return (
-    <PageLayout title="API Keys" description="Manage programmatic access keys">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">Status:</Label>
-            <div className="flex gap-1">
-              {(['all', 'active', 'revoked'] as const).map(status => (
-                <Button
-                  key={status}
-                  variant={filterStatus === status ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilterStatus(status)}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </Button>
-              ))}
-            </div>
+    <PageLayout title="API Keys">
+      {/* Hero */}
+      <section className="pb-8">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
+              Access
+            </p>
+            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
+              API Keys
+            </h1>
+            <p className="text-sm text-text-secondary mt-3">
+              {(data?.keys ?? []).length} active {(data?.keys ?? []).length === 1 ? 'key' : 'keys'}
+            </p>
           </div>
-          <div className="flex-1" />
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Key
-            </Button>
-          </DialogTrigger>
+            <DialogTrigger asChild>
+              <Button className="shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(124,106,247,0.35)]">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Key
+              </Button>
+            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create API Key</DialogTitle>
@@ -179,6 +175,27 @@ export default function ApiKeys() {
             </DialogContent>
           </Dialog>
         </div>
+      </section>
+
+      <div className="space-y-4">
+        {/* Tabs bar */}
+        <div className="card-surface p-3 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Label className="text-sm font-medium">Status:</Label>
+            <div className="flex gap-1">
+              {(['all', 'active', 'revoked'] as const).map(status => (
+                <Button
+                  key={status}
+                  variant={filterStatus === status ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setFilterStatus(status)}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Show plaintext key once */}
         <Dialog open={showKeyOpen} onOpenChange={setShowKeyOpen}>
@@ -227,7 +244,7 @@ export default function ApiKeys() {
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
-          <div className="rounded-md border border-border-default">
+          <div className="card-surface overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
