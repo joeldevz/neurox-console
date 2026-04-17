@@ -33,7 +33,7 @@ export default function Dashboard() {
   return (
     <PageLayout title="Dashboard">
       {/* Hero section — generous spacing, refined hierarchy */}
-      <section className="pt-2 pb-10">
+      <section className="pb-10">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
@@ -86,7 +86,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-px bg-border-subtle rounded-2xl overflow-hidden border border-border-subtle">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCell
             label="Users"
             value={stats?.users}
@@ -170,25 +170,25 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Footer hint */}
-      <section className="mt-12 pt-6 border-t border-border-subtle">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center">
-              <Zap className="w-4 h-4 text-brand-400" />
+      {/* Footer CTA — dedicated card */}
+      <section className="mt-12">
+        <div className="card-surface p-5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-brand-light flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-brand-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-text-primary">
+              <p className="text-sm font-semibold text-text-primary">
                 Connect Claude to this workspace
               </p>
-              <p className="text-xs text-text-tertiary">
+              <p className="text-xs text-text-tertiary mt-0.5">
                 Use Neurox as persistent memory for your AI workflows.
               </p>
             </div>
           </div>
           <Link
             to="/connect-claude"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-400 hover:text-brand-500 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand-500 hover:bg-brand-600 text-text-inverse text-sm font-medium transition-colors shrink-0"
           >
             Get started
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ function StatCell({ label, value, icon: Icon, accent, to, urgent, isLoading }: S
     <Link
       to={to}
       className={cn(
-        'group relative bg-surface-2 p-5 transition-colors duration-150',
+        'group relative card-surface-flat p-5 transition-colors duration-150',
         'hover:bg-surface-3 cursor-pointer'
       )}
     >
@@ -293,9 +293,8 @@ function ActionCard({ to, title, description, icon: Icon, badge }: ActionCardPro
     <Link
       to={to}
       className={cn(
-        'group relative bg-surface-2 border border-border-subtle rounded-xl p-5',
-        'transition-all duration-150',
-        'hover:bg-surface-3 hover:border-border-default'
+        'group relative card-surface-flat p-5 transition-all duration-150',
+        'hover:bg-surface-3'
       )}
     >
       <div className="flex items-start gap-4">

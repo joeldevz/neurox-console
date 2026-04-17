@@ -125,8 +125,8 @@ export default function Memories() {
         </Alert>
       )}
 
-      {/* Filter bar — sits on surface-2 with obvious card treatment */}
-      <div className="mb-3 bg-surface-2 ring-1 ring-border-subtle rounded-xl p-3 shadow-[0_1px_0_rgba(255,255,255,0.02)_inset,0_8px_24px_rgba(0,0,0,0.4)]">
+      {/* Filter bar — card with visible elevation */}
+      <div className="card-surface mb-3 p-3">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <div className="relative flex-1 min-w-[240px]">
@@ -188,7 +188,7 @@ export default function Memories() {
 
       {/* Results */}
       {isLoading ? (
-        <div className="bg-surface-2 ring-1 ring-border-subtle rounded-xl p-6 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <div className="card-surface p-6">
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full bg-surface-3" />
@@ -198,7 +198,7 @@ export default function Memories() {
       ) : !hasMemories ? (
         <EmptyState onCreate={() => setCreateDialogOpen(true)} disabled={!isAdmin || !orgMemoryCapability.supported} />
       ) : (
-        <section className="bg-surface-2 ring-1 ring-border-subtle rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <section className="card-surface overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -400,7 +400,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 function EmptyState({ onCreate, disabled }: { onCreate: () => void; disabled: boolean }) {
   return (
-    <section className="bg-surface-2 ring-1 ring-border-subtle rounded-xl p-12 text-center shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+    <section className="card-surface p-12 text-center">
       <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-surface-3 flex items-center justify-center">
         <Brain className="w-6 h-6 text-text-tertiary" />
       </div>
