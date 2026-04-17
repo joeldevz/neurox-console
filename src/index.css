@@ -8,12 +8,13 @@
 
 :root {
   /* ── SURFACES ─────────────────────────────────────────── */
-  --surface-0: #0a0a0a;
-  --surface-1: #0f0f0f;
-  --surface-2: #161616;
-  --surface-3: #1a1a1a;
-  --surface-4: #1e1e1e;
-  --surface-5: #222222;
+  /* Slightly lifted from pure black so cards contrast with page */
+  --surface-0: #050505;
+  --surface-1: #0c0c0c;
+  --surface-2: #141414;
+  --surface-3: #1c1c1c;
+  --surface-4: #242424;
+  --surface-5: #2a2a2a;
 
   /* ── TEXT ─────────────────────────────────────────────── */
   --text-primary:   #f5f5f5;
@@ -23,9 +24,10 @@
   --text-inverse:   #ffffff;
 
   /* ── BORDERS ──────────────────────────────────────────── */
-  --border-subtle:  rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong:  rgba(255, 255, 255, 0.12);
+  /* Values bumped so borders are actually visible over #0a0a0a */
+  --border-subtle:  rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong:  rgba(255, 255, 255, 0.18);
 
   /* ── BRAND ────────────────────────────────────────────── */
   --brand-400: #9984ff;
