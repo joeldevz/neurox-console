@@ -1,6 +1,4 @@
-'use client'
-
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FolderTree, ChevronRight, ChevronDown, Plus, Pencil, AlertCircle } from 'lucide-react'
@@ -17,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { api } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
 import { getAdminCapabilities } from '@/lib/adminCapabilities'
@@ -42,7 +42,7 @@ function TreeNode({
       <div
         className="flex items-center gap-2 py-2 rounded-md text-sm hover:opacity-80 cursor-pointer px-3"
         style={{
-          paddingLeft: `${depth * 16 + 12}px`,
+          paddingLeft: `${Math.min(depth, 6) * 16 + 12}px`,
         }}
         onClick={() => setExpanded(e => !e)}
       >
@@ -55,10 +55,7 @@ function TreeNode({
         ) : (
           <span className="w-3 h-3 shrink-0" />
         )}
-        <FolderTree
-          className="w-4 h-4 shrink-0 text-brand"
-          style={{ color: 'var(--brand-400)' }}
-        />
+        <FolderTree className="w-4 h-4 shrink-0 text-brand-400" />
         <span className="font-medium">{node.name}</span>
         <Badge variant="outline" className="text-xs">
           {node.node_type}
@@ -69,13 +66,13 @@ function TreeNode({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 shrink-0 ml-2"
+          className="w-4 h-4 shrink-0 ml-2"
           onClick={e => {
             e.stopPropagation()
             onEdit(node as Namespace)
           }}
         >
-          <Pencil className="w-3 h-3" />
+          <Pencil className="w-4 h-4" />
         </Button>
       </div>
       {expanded &&
@@ -91,9 +88,8 @@ export default function Namespaces() {
   const [view, setView] = useState<'list' | 'tree'>('list')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create')
-  const [editingNamespace, setEditingNamespace] = useState<Namespace | undefined>(
-    undefined
-  )
+  const [editingNamespace, setEditingNamespace] = useState<Namespace | undefined>(undefined)
+  const [deleteConfirm, setDeleteConfirm] = useState<Namespace | null>(null)
 
   const qc = useQueryClient()
   const { me } = useAuthContext()
@@ -101,13 +97,13 @@ export default function Namespaces() {
   const isAdmin = me?.is_admin || me?.role === 'owner' || me?.role === 'admin'
 
   const listQuery = useQuery({
-    queryKey: ['namespaces'],
+    queryKey: ['namespaces', 'list'],
     queryFn: () => api.listNamespaces(200, 0),
     enabled: view === 'list',
   })
 
   const treeQuery = useQuery({
-    queryKey: ['namespaces-tree'],
+    queryKey: ['namespaces', 'tree'],
     queryFn: () => api.getNamespaceTree(),
     enabled: view === 'tree',
   })
@@ -120,7 +116,6 @@ export default function Namespaces() {
     }) => api.createNamespace(data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['namespaces'] })
-      void qc.invalidateQueries({ queryKey: ['namespaces-tree'] })
       setDialogOpen(false)
       toast.success('Namespace created')
     },
@@ -143,7 +138,6 @@ export default function Namespaces() {
     }) => api.patchNamespace(id, data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['namespaces'] })
-      void qc.invalidateQueries({ queryKey: ['namespaces-tree'] })
       setDialogOpen(false)
       setEditingNamespace(undefined)
       toast.success('Namespace updated')
@@ -177,12 +171,15 @@ export default function Namespaces() {
     }
   }
 
-  // Build parent options from list query data using path as value
-  const parentOptions =
-    listQuery.data?.namespaces.map(ns => ({
-      label: `${ns.name} (${ns.path})`,
-      value: ns.path,
-    })) ?? []
+  // Build parent options from list query data using path as value, excluding the namespace being edited
+  const parentOptions = useMemo(() => {
+    const all = listQuery.data?.namespaces ?? []
+    const editingId = editingNamespace?.id
+    if (!editingId) return all.map(ns => ({ label: `${ns.name} (${ns.path})`, value: ns.path }))
+    return all
+      .filter(ns => ns.id !== editingId)
+      .map(ns => ({ label: `${ns.name} (${ns.path})`, value: ns.path }))
+  }, [listQuery.data, editingNamespace])
 
   const namespacesCount = listQuery.data?.namespaces.length ?? 0
   const hasNamespaces = namespacesCount > 0
@@ -210,23 +207,8 @@ export default function Namespaces() {
         </Alert>
       )}
 
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <Button
-            variant={view === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('list')}
-          >
-            List
-          </Button>
-          <Button
-            variant={view === 'tree' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('tree')}
-          >
-            Tree
-          </Button>
-        </div>
+      <div className="flex justify-between items-center mb-4">
+        <div></div>
         <Button
           onClick={handleOpenCreate}
           disabled={!isAdmin || !capabilities.namespaceCreate.supported}
@@ -236,102 +218,116 @@ export default function Namespaces() {
         </Button>
       </div>
 
-      {createDisabledReason && (
-        <p className="text-xs text-right text-muted-foreground">
-          {createDisabledReason}
-        </p>
-      )}
+      <Tabs value={view} onValueChange={(v) => {
+        setView(v as 'list' | 'tree')
+        void qc.invalidateQueries({ queryKey: ['namespaces'] })
+      }}>
+        <TabsList>
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="tree">Tree</TabsTrigger>
+        </TabsList>
 
-      {view === 'list' &&
-        (listQuery.isLoading ? (
-          <Skeleton className="h-64 w-full" />
-        ) : listQuery.error ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Unable to display namespace list. Please try again later.
-            </AlertDescription>
-          </Alert>
-        ) : !hasNamespaces ? (
-          <NamespaceEmptyState
-            onCreate={handleOpenCreate}
-            disabled={!isAdmin || !capabilities.namespaceCreate.supported}
-            disabledReason={createDisabledReason}
-          />
-        ) : (
-          <div className="rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Path</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(listQuery.data?.namespaces ?? []).map(ns => (
-                  <TableRow key={ns.id}>
-                    <TableCell className="font-medium">{ns.name}</TableCell>
-                    <TableCell className="font-mono text-xs text-secondary">
-                      {ns.path}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{ns.node_type}</Badge>
-                    </TableCell>
-                    <TableCell>{ns.level}</TableCell>
-                    <TableCell className="text-secondary">
-                      {formatDate(ns.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenEdit(ns)}
-                        disabled={!isAdmin || !capabilities.namespaceEdit.supported}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+        <TabsContent value="list">
+
+          {createDisabledReason && (
+            <p className="text-xs text-muted-foreground mb-4">
+              {createDisabledReason}
+            </p>
+          )}
+          {listQuery.isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : listQuery.error ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Unable to display namespace list. Please try again later.
+              </AlertDescription>
+            </Alert>
+          ) : !hasNamespaces ? (
+            <NamespaceEmptyState
+              onCreate={handleOpenCreate}
+              disabled={!isAdmin || !capabilities.namespaceCreate.supported}
+              disabledReason={createDisabledReason}
+            />
+          ) : (
+            <div className="rounded-md border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Path</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-24">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ))}
+                </TableHeader>
+                <TableBody>
+                  {(listQuery.data?.namespaces ?? []).map(ns => (
+                    <TableRow key={ns.id}>
+                      <TableCell className="font-medium">{ns.name}</TableCell>
+                      <TableCell className="font-mono text-xs text-secondary">
+                        {ns.path}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{ns.node_type}</Badge>
+                      </TableCell>
+                      <TableCell>{ns.level}</TableCell>
+                      <TableCell className="text-secondary">
+                        {formatDate(ns.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(ns)}
+                            disabled={!isAdmin || !capabilities.namespaceEdit.supported}
+                            className="w-4 h-4"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </TabsContent>
 
-      {view === 'tree' &&
-        (treeQuery.isLoading ? (
-          <Skeleton className="h-64 w-full" />
-        ) : treeQuery.error ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Unable to display namespace tree. Please try again later.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div
-            className="rounded-md border p-2"
-            style={{
-              borderColor: 'var(--border-default)',
-              background: 'var(--bg-card)',
-            }}
-          >
-            {treeQuery.data?.tree.map(node => (
-              <TreeNode key={node.id} node={node} onEdit={handleOpenEdit} />
-            ))}
-            {!treeQuery.data?.tree.length && (
-              <NamespaceEmptyState
-                onCreate={handleOpenCreate}
-                disabled={!capabilities.namespaceCreate.supported}
-                disabledReason={createDisabledReason}
-              />
-            )}
-          </div>
-        ))}
+        <TabsContent value="tree">
+          {createDisabledReason && (
+            <p className="text-xs text-muted-foreground mb-4">
+              {createDisabledReason}
+            </p>
+          )}
+          {treeQuery.isLoading ? (
+            <Skeleton className="h-64 w-full" />
+          ) : treeQuery.error ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Unable to display namespace tree. Please try again later.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="rounded-md border p-2">
+              {treeQuery.data?.tree.map(node => (
+                <TreeNode key={node.id} node={node} onEdit={handleOpenEdit} />
+              ))}
+              {!treeQuery.data?.tree.length && (
+                <NamespaceEmptyState
+                  onCreate={handleOpenCreate}
+                  disabled={!capabilities.namespaceCreate.supported}
+                  disabledReason={createDisabledReason}
+                />
+              )}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <NamespaceFormDialog
         open={dialogOpen}
@@ -347,6 +343,20 @@ export default function Namespaces() {
               ? undefined
               : capabilities.namespaceEdit.reason
         }
+      />
+
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete namespace?"
+        description={`This action cannot be undone. The namespace "${deleteConfirm?.name}" will be deleted. Memories in this namespace will remain but become unlinked.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          // Note: deleteNamespace API method does not exist in src/lib/api.ts
+          // This confirm dialog is prepared for future backend support
+          setDeleteConfirm(null)
+        }}
       />
     </PageLayout>
   )

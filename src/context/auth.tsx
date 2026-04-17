@@ -9,6 +9,38 @@ import {
 import { api, setToken, clearToken, ApiClientError } from '@/lib/api'
 import type { Me } from '@/types/api'
 
+/**
+ * Decode a JWT without verifying signature.
+ * Returns the payload or null if the token is malformed.
+ */
+function decodeJwt(token: string): { exp?: number; [key: string]: unknown } | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    const payload = parts[1]
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Check if a JWT is expired. Non-JWT tokens (e.g. nrx_ API keys) return false
+ * because they don't have an expiry claim the client can check.
+ */
+function isTokenExpired(token: string): boolean {
+  // Non-JWT tokens (nrx_ API keys) — no client-side expiry check
+  if (!token.includes('.') || token.startsWith('nrx_')) return false
+
+  const payload = decodeJwt(token)
+  if (!payload?.exp) return false
+
+  // exp is in seconds since epoch; Date.now() is ms
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  return payload.exp <= nowSeconds
+}
+
 interface AuthState {
   token: string | null
   me: Me | null
@@ -22,7 +54,13 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const initialToken = localStorage.getItem('neurox_token')
+const storedToken = localStorage.getItem('neurox_token')
+const initialToken = storedToken && !isTokenExpired(storedToken) ? storedToken : null
+
+// If we had a token but it was expired, clean it up
+if (storedToken && !initialToken) {
+  localStorage.removeItem('neurox_token')
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -63,6 +101,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken()
     setState({ token: null, me: null, isLoading: false })
   }, [])
+
+  // Proactively logout when JWT expires
+  useEffect(() => {
+    if (!state.token) return
+    const payload = decodeJwt(state.token)
+    if (!payload?.exp) return
+
+    const msUntilExpiry = payload.exp * 1000 - Date.now()
+    if (msUntilExpiry <= 0) {
+      // Already expired — logout immediately
+      logout()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      // eslint-disable-next-line no-console
+      console.warn('[auth] Token expired, logging out')
+      logout()
+    }, msUntilExpiry)
+
+    return () => clearTimeout(timer)
+  }, [state.token, logout])
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout }}>

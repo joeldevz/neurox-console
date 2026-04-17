@@ -1,23 +1,82 @@
 import { useQuery } from '@tanstack/react-query'
-import { Users, Key, FolderTree, Brain, CheckSquare } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Users, Key, Boxes, Brain, CheckSquare, AlertCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { PageLayout } from '@/components/layout'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/lib/api'
-import type { DashboardStats } from '@/types/api'
+import { cn } from '@/lib/utils'
 
-const STATS_CARDS: Array<{
-  key: keyof DashboardStats
+interface StatCardProps {
   label: string
+  value: number | string | React.ReactNode
   icon: React.ElementType
-  color: string
-}> = [
-  { key: 'users', label: 'Total Users', icon: Users, color: 'var(--brand-500)' },
-  { key: 'namespaces', label: 'Namespaces', icon: FolderTree, color: 'var(--color-success)' },
-  { key: 'memories', label: 'Memories', icon: Brain, color: 'var(--color-info)' },
-  { key: 'pending_approvals', label: 'Pending Approvals', icon: CheckSquare, color: 'var(--color-warning)' },
-  { key: 'api_keys', label: 'API Keys', icon: Key, color: 'var(--text-secondary)' },
-]
+  urgent?: boolean
+  isLoading?: boolean
+}
+
+function StatCard({ label, value, icon: Icon, urgent, isLoading }: StatCardProps) {
+  return (
+    <div
+      className={cn(
+        'bg-surface-2 border border-border-subtle rounded-md p-5',
+        'transition-colors duration-150 hover:bg-surface-3',
+        urgent && 'border-warning-500/30'
+      )}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[11px] uppercase tracking-widest text-text-tertiary">
+          {label}
+        </span>
+        <Icon
+          size={14}
+          className={cn(urgent ? 'text-warning-400' : 'text-text-tertiary')}
+        />
+      </div>
+      {isLoading ? (
+        <Skeleton className="h-8 w-12" />
+      ) : (
+        <p
+          className={cn(
+            'text-3xl font-bold tracking-tight',
+            urgent ? 'text-warning-400' : 'text-text-primary'
+          )}
+        >
+          {value}
+        </p>
+      )}
+    </div>
+  )
+}
+
+interface QuickActionProps {
+  to: string
+  label: string
+  description: string
+  icon: React.ElementType
+}
+
+function QuickAction({
+  to,
+  label,
+  description,
+  icon: Icon,
+}: QuickActionProps) {
+  return (
+    <Link
+      to={to}
+      className="group bg-surface-2 hover:bg-surface-3 border border-border-subtle rounded-md p-5 transition-colors duration-150 flex items-start gap-3"
+    >
+      <div className="w-9 h-9 rounded-md bg-surface-3 group-hover:bg-brand-light flex items-center justify-center shrink-0 transition-colors">
+        <Icon size={16} className="text-text-secondary group-hover:text-brand-400 transition-colors" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-text-primary">{label}</p>
+        <p className="text-xs text-text-secondary mt-0.5">{description}</p>
+      </div>
+    </Link>
+  )
+}
 
 export default function Dashboard() {
   const { data: stats, isLoading, error } = useQuery({
@@ -26,40 +85,110 @@ export default function Dashboard() {
     refetchInterval: 30_000,
   })
 
+  // System health indicator — green dot if api.me succeeds
+  const systemHealthOk = !error
+
   return (
-    <PageLayout title="Dashboard" description="Overview of your Neurox instance">
-      {error && (
-        <p className="text-sm" style={{ color: 'var(--color-danger)' }}>
-          Failed to load stats: {error.message}
-        </p>
-      )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        {STATS_CARDS.map(({ key, label, icon: Icon, color }) => (
-          <Card key={key}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle
-                className="text-sm font-medium"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {label}
-              </CardTitle>
-              <Icon className="w-4 h-4" style={{ color }} />
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <p
-                  className="text-3xl font-bold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {stats?.[key] ?? '—'}
-                </p>
+    <PageLayout title="Dashboard">
+      {/* Hero section */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-sm text-text-secondary mt-1">
+              Overview of your organization.
+            </p>
+          </div>
+          {/* System Health Indicator */}
+          <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                'w-3 h-3 rounded-full',
+                systemHealthOk ? 'bg-success-400' : 'bg-danger-400'
               )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            />
+            <span className="text-xs text-text-secondary">
+              {systemHealthOk ? 'System healthy' : 'System unavailable'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Error state */}
+      {error && (
+        <div className="mb-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Failed to load stats: {error.message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Stats grid */}
+      <section className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard
+          label="Users"
+          value={stats?.users ?? '—'}
+          icon={Users}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Namespaces"
+          value={stats?.namespaces ?? '—'}
+          icon={Boxes}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Memories"
+          value={stats?.memories ?? '—'}
+          icon={Brain}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="Pending Approvals"
+          value={stats?.pending_approvals ?? '—'}
+          icon={CheckSquare}
+          urgent={(stats?.pending_approvals ?? 0) > 0}
+          isLoading={isLoading}
+        />
+        <StatCard
+          label="API Keys"
+          value={stats?.api_keys ?? '—'}
+          icon={Key}
+          isLoading={isLoading}
+        />
+      </section>
+
+      {/* Quick actions */}
+      <section>
+        <h2 className="text-xs uppercase tracking-widest text-text-tertiary mb-3">
+          Quick actions
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <QuickAction
+            to="/users"
+            label="Manage users"
+            description="Invite, suspend, or change roles"
+            icon={Users}
+          />
+          <QuickAction
+            to="/api-keys"
+            label="Create API key"
+            description="Generate a new access token"
+            icon={Key}
+          />
+          <QuickAction
+            to="/approvals"
+            label="Review approvals"
+            description={`${stats?.pending_approvals ?? 0} pending`}
+            icon={CheckSquare}
+          />
+        </div>
+      </section>
     </PageLayout>
   )
 }

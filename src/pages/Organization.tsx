@@ -5,11 +5,14 @@ import { Save, AlertCircle } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { api } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { STATUS_COLORS } from '@/lib/constants'
 import {
   deriveOrgCompanyInfoState,
   buildOrgCompanyInfoPatch,
@@ -125,30 +128,39 @@ export default function Organization() {
   if (orgError) {
     return (
       <PageLayout title="Organization">
-        <Alert variant="destructive" className="max-w-2xl">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load organization: {orgError.message}
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+            Organization
+          </h1>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Failed to load organization: {orgError.message}
+            </AlertDescription>
+          </Alert>
+        </div>
       </PageLayout>
     )
   }
 
   return (
-    <PageLayout
-      title="Organization"
-      description="View and update your organization settings"
-    >
+    <PageLayout title="Organization">
       <div className="space-y-6 max-w-2xl">
+        {/* Page header */}
+        <section>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+            Organization
+          </h1>
+        </section>
         {/* Company Information Card */}
-        <Card>
+        <Card className="bg-surface-2 border border-border-subtle rounded-lg">
           <CardHeader>
             <CardTitle>Company Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {companyInfoState?.isFirstTimeSetup && (
               <Alert>
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   This is the first-time setup for your company information.
                   Fill in the details below to initialize your organization profile.
@@ -195,8 +207,9 @@ export default function Organization() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
-                  <Input
+                  <Textarea
                     id="description"
+                    rows={3}
                     value={draft.description}
                     onChange={(e) =>
                       setDraft((d) => ({ ...d, description: e.target.value }))
@@ -227,24 +240,44 @@ export default function Organization() {
               </>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-text-secondary">
                   {companyInfoState?.reason}
                 </p>
                 <div className="space-y-2">
                   <Label>Display Name</Label>
-                  <Input value="" readOnly disabled />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                      Display Name
+                    </p>
+                    <p className="text-sm text-text-primary">—</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Legal Name</Label>
-                  <Input value="" readOnly disabled />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                      Legal Name
+                    </p>
+                    <p className="text-sm text-text-primary">—</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Input value="" readOnly disabled />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                      Description
+                    </p>
+                    <p className="text-sm text-text-primary">—</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Website</Label>
-                  <Input value="" readOnly disabled />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                      Website
+                    </p>
+                    <p className="text-sm text-text-primary">—</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -252,50 +285,58 @@ export default function Organization() {
         </Card>
 
         {/* System Metadata Card */}
-        <Card>
+        <Card className="bg-surface-2 border border-border-subtle rounded-lg">
           <CardHeader>
             <CardTitle>System Metadata</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input
-                value={org?.name ?? ''}
-                readOnly
-                className="text-muted-foreground"
-              />
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Organization ID
+              </p>
+              <p className="text-sm text-text-primary font-mono">{org?.id ?? '—'}</p>
             </div>
-            <div className="space-y-2">
-              <Label>Slug</Label>
-              <Input
-                value={org?.slug ?? ''}
-                readOnly
-                className="text-muted-foreground"
-              />
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Name
+              </p>
+              <p className="text-sm text-text-primary font-mono">{org?.name ?? '—'}</p>
             </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Input
-                value={org?.status ?? ''}
-                readOnly
-                className="text-muted-foreground"
-              />
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Slug
+              </p>
+              <p className="text-sm text-text-primary font-mono">{org?.slug ?? '—'}</p>
             </div>
-            <div className="space-y-2">
-              <Label>Created At</Label>
-              <Input
-                value={org?.created_at ? new Date(org.created_at).toLocaleString() : ''}
-                readOnly
-                className="text-muted-foreground"
-              />
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Status
+              </p>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold capitalize',
+                  STATUS_COLORS[org?.status as keyof typeof STATUS_COLORS] ?? 
+                    STATUS_COLORS.pending
+                )}
+              >
+                {org?.status ?? '—'}
+              </span>
             </div>
-            <div className="space-y-2">
-              <Label>Updated At</Label>
-              <Input
-                value={org?.updated_at ? new Date(org.updated_at).toLocaleString() : ''}
-                readOnly
-                className="text-muted-foreground"
-              />
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Created At
+              </p>
+              <p className="text-sm text-text-primary">
+                {org?.created_at ? new Date(org.created_at).toLocaleString() : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-text-tertiary mb-1">
+                Updated At
+              </p>
+              <p className="text-sm text-text-primary">
+                {org?.updated_at ? new Date(org.updated_at).toLocaleString() : '—'}
+              </p>
             </div>
           </CardContent>
         </Card>

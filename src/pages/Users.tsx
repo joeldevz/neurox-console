@@ -1,10 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { UserPlus } from 'lucide-react'
+import { UserPlus, MoreHorizontal } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,23 +35,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { api } from '@/lib/api'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { ROLE_COLORS, STATUS_COLORS } from '@/lib/constants'
 import type { User } from '@/types/api'
-
-const ROLE_COLORS: Record<User['role'], string> = {
-  owner: 'var(--brand-500)',
-  admin: 'var(--color-info)',
-  memory_manager: 'var(--color-success)',
-  member: 'var(--text-muted)',
-}
-
-const STATUS_COLORS: Record<User['status'], string> = {
-  active: 'var(--color-success)',
-  invited: 'var(--color-warning)',
-  suspended: 'var(--color-danger)',
-  deleted: 'var(--text-muted)',
-}
 
 export default function Users() {
   const qc = useQueryClient()
@@ -61,11 +48,25 @@ export default function Users() {
   const [role, setRole] = useState<User['role']>('member')
   const [passwordUserId, setPasswordUserId] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [userToSuspend, setUserToSuspend] = useState<User | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: () => api.listUsers(100, 0),
   })
+
+  const users = data?.users
+  const filteredUsers = useMemo(() => {
+    if (!users) return []
+    const q = searchQuery.toLowerCase()
+    return users
+      .filter(user =>
+        user.email.toLowerCase().includes(q) ||
+        (user.name && user.name.toLowerCase().includes(q))
+      )
+      .sort((a, b) => a.email.localeCompare(b.email))
+  }, [users, searchQuery])
 
   const createMutation = useMutation({
     mutationFn: () => api.createUser({ email, role }),
@@ -86,6 +87,7 @@ export default function Users() {
       api.patchUser(id, data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['users'] })
+      setUserToSuspend(null)
       toast.success('User updated')
     },
     onError: () => {
@@ -106,148 +108,197 @@ export default function Users() {
     },
   })
 
+  const isRowPending = (id: string) =>
+    (patchMutation.isPending && patchMutation.variables?.id === id) ||
+    (passwordMutation.isPending && passwordMutation.variables?.userId === id)
+
+  const handleRoleChange = (userId: string, newRole: User['role']) => {
+    patchMutation.mutate({ id: userId, data: { role: newRole } })
+  }
+
+  const handleActivate = (userId: string) => {
+    patchMutation.mutate({ id: userId, data: { status: 'active' } })
+  }
+
+  const handleSuspendConfirmed = () => {
+    if (userToSuspend) {
+      patchMutation.mutate({ id: userToSuspend.id, data: { status: 'suspended' } })
+    }
+  }
+
   return (
     <PageLayout title="Users" description="Manage organization members">
-      <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite User</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="user@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select
-                  value={role}
-                  onValueChange={v => setRole(v as User['role'])}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="memory_manager">Memory Manager</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="owner">Owner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => createMutation.mutate()}
-                disabled={createMutation.isPending || !email.trim()}
-              >
-                {createMutation.isPending ? 'Creating…' : 'Create User'}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search by email or name…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          <div className="flex-1" />
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add User
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (
-        <div
-          className="rounded-md border"
-          style={{ borderColor: 'var(--border-default)' }}
-        >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.users ?? []).map(user => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      style={{
-                        background: ROLE_COLORS[user.role],
-                        color: 'var(--text-inverse)',
-                      }}
-                    >
-                      {user.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      style={{
-                        borderColor: STATUS_COLORS[user.status],
-                        color: STATUS_COLORS[user.status],
-                      }}
-                    >
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell style={{ color: 'var(--text-secondary)' }}>
-                    {formatDate(user.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          ···
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            patchMutation.mutate({
-                              id: user.id,
-                              data: { role: 'admin' },
-                            })
-                          }
-                        >
-                          Make Admin
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            patchMutation.mutate({
-                              id: user.id,
-                              data: { status: 'suspended' },
-                            })
-                          }
-                        >
-                          Suspend
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setPasswordUserId(user.id)
-                            setNewPassword('')
-                          }}
-                        >
-                          Set Password
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite User</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Select
+                    value={role}
+                    onValueChange={v => setRole(v as User['role'])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="memory_manager">Memory Manager</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="owner">Owner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => createMutation.mutate()}
+                  disabled={createMutation.isPending || !email.trim()}
+                >
+                  {createMutation.isPending ? 'Creating…' : 'Create User'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
-      )}
+
+        {isLoading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : (
+          <div className="rounded-md border border-border-default">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email / Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map(user => (
+                  <TableRow key={user.id} className="hover:bg-surface-3 transition-colors">
+                    <TableCell className="px-5 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-text-primary">{user.email}</p>
+                        {user.name && <p className="text-xs text-text-tertiary">{user.name}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-5 py-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className={cn(
+                              'px-2 py-0.5 rounded text-xs font-semibold capitalize cursor-pointer hover:opacity-80 transition-opacity',
+                              ROLE_COLORS[user.role]
+                            )}
+                            disabled={isRowPending(user.id)}
+                          >
+                            {user.role.replace('_', ' ')}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'member')}
+                            disabled={isRowPending(user.id)}
+                          >
+                            Make Member
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'memory_manager')}
+                            disabled={isRowPending(user.id)}
+                          >
+                            Make Memory Manager
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'admin')}
+                            disabled={isRowPending(user.id)}
+                          >
+                            Make Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'owner')}
+                            disabled={isRowPending(user.id)}
+                          >
+                            Make Owner
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                    <TableCell className="px-5 py-4">
+                      <span className={cn('px-2 py-0.5 rounded text-xs font-semibold capitalize', STATUS_COLORS[user.status])}>
+                        {user.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-text-secondary">
+                      {formatDate(user.created_at)}
+                    </TableCell>
+                    <TableCell className="px-5 py-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={isRowPending(user.id)}>
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {user.status === 'suspended' ? (
+                            <DropdownMenuItem
+                              onClick={() => handleActivate(user.id)}
+                              disabled={isRowPending(user.id)}
+                            >
+                              Activate
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => setUserToSuspend(user)}
+                              disabled={isRowPending(user.id)}
+                            >
+                              Suspend
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setPasswordUserId(user.id)
+                              setNewPassword('')
+                            }}
+                            disabled={isRowPending(user.id)}
+                          >
+                            Set Password
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
       {/* Set Password Dialog */}
       <Dialog open={passwordUserId !== null} onOpenChange={open => { if (!open) setPasswordUserId(null) }}>
@@ -281,6 +332,19 @@ export default function Users() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Suspend User Confirmation */}
+      <ConfirmDialog
+        open={!!userToSuspend}
+        onOpenChange={(open) => !open && setUserToSuspend(null)}
+        title="Suspend user?"
+        description={`This will revoke active sessions for ${userToSuspend?.email}. They can be reactivated later.`}
+        confirmLabel="Suspend"
+        variant="danger"
+        loading={patchMutation.isPending}
+        onConfirm={handleSuspendConfirmed}
+      />
+      </div>
     </PageLayout>
   )
 }

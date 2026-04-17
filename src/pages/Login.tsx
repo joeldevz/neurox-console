@@ -1,23 +1,23 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Brain } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext as useAuth } from '@/context/auth'
 import { api, ApiClientError } from '@/lib/api'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Sign in · Neurox'
+  }, [])
+
+  // Tab mode state
+  const [mode, setMode] = useState<'password' | 'token'>('password')
 
   // Email + password state
   const [email, setEmail] = useState('')
@@ -78,57 +78,62 @@ export default function Login() {
   }
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center p-4"
-      style={{ background: 'var(--bg-page)' }}
-    >
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-3">
-            <Brain className="w-10 h-10" style={{ color: 'var(--brand-500)' }} />
+    <div className="min-h-screen bg-surface-0 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center gap-3 mb-8 justify-center">
+          <div className="w-10 h-10 rounded-lg bg-brand-500 flex items-center justify-center">
+            <span className="text-text-inverse font-bold">N</span>
           </div>
-          <CardTitle className="text-2xl">Neurox Console</CardTitle>
-          <CardDescription>
-            Sign in to manage your Neurox instance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="password">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="password" className="flex-1">Email &amp; Password</TabsTrigger>
-              <TabsTrigger value="token" className="flex-1">API Key</TabsTrigger>
+          <span className="text-xl font-semibold text-text-primary">Neurox</span>
+        </div>
+
+        <div className="bg-surface-2 border border-border-subtle rounded-lg p-8">
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-2">
+            Welcome back
+          </h1>
+          <p className="text-sm text-text-secondary mb-6">
+            Sign in to your admin console.
+          </p>
+
+          <Tabs value={mode} onValueChange={(v) => setMode(v as 'password' | 'token')}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="password">Email + Password</TabsTrigger>
+              <TabsTrigger value="token">API Key</TabsTrigger>
             </TabsList>
 
             {/* Email + Password */}
             <TabsContent value="password">
               <form onSubmit={handleEmailLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="login-email">Email</Label>
                   <Input
-                    id="email"
+                    id="login-email"
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     autoComplete="email"
                     autoFocus
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="login-password">Password</Label>
                   <Input
-                    id="password"
+                    id="login-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     autoComplete="current-password"
+                    required
                   />
                 </div>
                 {emailError && (
-                  <p className="text-sm" style={{ color: 'var(--color-danger)' }}>
+                  <div role="alert" aria-live="polite" className="text-sm text-danger-400 bg-danger-light/20 border border-danger-500/30 rounded-md px-3 py-2">
                     {emailError}
-                  </p>
+                  </div>
                 )}
                 <Button
                   type="submit"
@@ -144,20 +149,21 @@ export default function Login() {
             <TabsContent value="token">
               <form onSubmit={handleTokenLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="token">API Key / Token</Label>
+                  <Label htmlFor="login-token">API Key</Label>
                   <Input
-                    id="token"
+                    id="login-token"
                     type="password"
                     placeholder="nrx_..."
                     value={token}
                     onChange={e => setToken(e.target.value)}
-                    autoComplete="current-password"
+                    autoComplete="off"
+                    required
                   />
                 </div>
                 {tokenError && (
-                  <p className="text-sm" style={{ color: 'var(--color-danger)' }}>
+                  <div role="alert" aria-live="polite" className="text-sm text-danger-400 bg-danger-light/20 border border-danger-500/30 rounded-md px-3 py-2">
                     {tokenError}
-                  </p>
+                  </div>
                 )}
                 <Button
                   type="submit"
@@ -169,8 +175,12 @@ export default function Login() {
               </form>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+
+        <p className="text-center text-xs text-text-tertiary mt-6">
+          Protected by Neurox Auth
+        </p>
+      </div>
     </div>
   )
 }

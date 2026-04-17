@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
 import { AuthProvider, useAuthContext } from '@/context/auth'
 import { ThemeProvider } from '@/context/theme'
 import { ProtectedRoute, PublicRoute } from '@/components/ProtectedRoute'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { setUnauthorizedCallback, ApiClientError } from '@/lib/api'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
@@ -70,14 +72,28 @@ function AppWithAuth() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppWithAuth />
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppWithAuth />
+              <Toaster
+                position="top-right"
+                theme="dark"
+                richColors
+                toastOptions={{
+                  style: {
+                    background: 'var(--surface-2)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-subtle)',
+                  },
+                }}
+              />
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }

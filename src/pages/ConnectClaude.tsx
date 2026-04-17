@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Copy, Check, ExternalLink, RefreshCw, Info } from 'lucide-react'
 import { PageLayout } from '@/components/layout'
@@ -24,10 +24,22 @@ export default function ConnectClaude() {
     queryFn: () => api.listOAuthTokens(),
   })
 
-  const isConnected = (data?.count ?? 0) > 0
+  // Filter tokens to only active (non-expired) ones.
+  // Date.now() must be read via effect (not during render) to satisfy react-compiler purity.
+  const [nowTs, setNowTs] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNowTs(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  const activeTokens = (data?.tokens ?? []).filter(t => {
+    if (!t.expires_at) return true // no expiry = always active
+    return new Date(t.expires_at).getTime() > nowTs
+  })
+
+  const isConnected = activeTokens.length > 0
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(MCP_URL)
+    void navigator.clipboard.writeText(MCP_URL)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -53,18 +65,18 @@ export default function ConnectClaude() {
                 : 'No active Claude connections detected'}
             </CardDescription>
           </CardHeader>
-          {isConnected && data && data.tokens.length > 0 && (
-            <CardContent>
-              <div className="text-sm text-muted-foreground space-y-1">
-                {data.tokens.map(tok => (
-                  <div key={tok.id} className="flex justify-between">
-                    <span className="font-mono text-xs">{tok.client_id.slice(0, 16)}…</span>
-                    <span>Expires {formatDate(tok.expires_at)}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          )}
+           {isConnected && activeTokens.length > 0 && (
+             <CardContent>
+               <div className="text-sm text-text-secondary space-y-1">
+                 {activeTokens.map(tok => (
+                   <div key={tok.id} className="flex justify-between">
+                     <span className="font-mono text-xs">{tok.client_id.slice(0, 16)}…</span>
+                     <span>Expires {formatDate(tok.expires_at)}</span>
+                   </div>
+                 ))}
+               </div>
+             </CardContent>
+           )}
         </Card>
 
         {/* MCP URL card */}
@@ -84,15 +96,16 @@ export default function ConnectClaude() {
                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
-            {/* Pre-registered client_id info */}
-            <div className="flex items-start gap-2 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-              <span>
-                Claude uses the pre-registered client ID{' '}
-                <code className="font-mono text-foreground">{CLAUDE_CLIENT_ID}</code>{' '}
-                — no manual registration needed.
-              </span>
-            </div>
+             {/* Pre-registered client_id info */}
+             <div className="flex items-start gap-2 rounded-md bg-surface-3 px-3 py-2 text-xs text-text-secondary border border-border-subtle">
+               <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+               <span>
+                 Claude uses the pre-registered client ID{' '}
+                 <code className="font-mono text-text-primary">{CLAUDE_CLIENT_ID}</code>{' '}
+                 — no manual registration needed.
+               </span>
+             </div>
+             {/* TODO: wire revoke when api.revokeOAuthToken exists */}
           </CardContent>
         </Card>
 
@@ -101,14 +114,14 @@ export default function ConnectClaude() {
           <CardHeader>
             <CardTitle className="text-base">How to Connect</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <ol className="list-decimal list-inside space-y-2">
-              <li>Open Claude → Settings → Connections → Add MCP Server</li>
-              <li>Paste the MCP Server URL above</li>
-              <li>Claude will open a browser window — log in with your Neurox credentials</li>
-              <li>Approve the connection request</li>
-              <li>Return here and click Refresh to confirm the connection</li>
-            </ol>
+           <CardContent className="space-y-3">
+             <ol className="list-decimal list-inside space-y-2 text-sm text-text-secondary">
+               <li>Open Claude → Settings → Connections → Add MCP Server</li>
+               <li>Paste the MCP Server URL above</li>
+               <li>Claude will open a browser window — log in with your Neurox credentials</li>
+               <li>Approve the connection request</li>
+               <li>Return here and click Refresh to confirm the connection</li>
+             </ol>
             <div className="pt-2 flex gap-2">
               <Button
                 size="sm"

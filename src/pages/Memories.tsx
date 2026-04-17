@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Plus, Search, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageLayout } from '@/components/layout'
@@ -34,25 +34,15 @@ import { CreateMemoryDialog } from '@/components/memories/CreateMemoryDialog'
 import { api } from '@/lib/api'
 import { getAdminCapabilities } from '@/lib/adminCapabilities'
 import { useAuthContext } from '@/context/auth'
-import { formatDate, truncate } from '@/lib/utils'
+import { formatDate, truncate, cn } from '@/lib/utils'
+import { useDebounce } from '@/hooks/useDebounce'
+import { KIND_COLORS, VISIBILITY_STYLES } from '@/lib/constants'
 import type { Memory } from '@/types/api'
-
-const KIND_COLORS: Record<Memory['kind'], string> = {
-  episodic: 'var(--color-info)',
-  semantic: 'var(--color-success)',
-  procedural: 'var(--color-warning)',
-}
-
-const VISIBILITY_STYLES = {
-  personal: { bg: 'var(--bg-muted)', color: 'var(--text-secondary)', label: '🔒 Personal' },
-  namespace: { bg: 'var(--color-info)', color: 'var(--text-primary)', label: '👥 Namespace' },
-  org: { bg: 'var(--color-success)', color: 'var(--text-primary)', label: '🌐 Org' },
-}
 
 export default function Memories() {
   const [search, setSearch] = useState('')
-  const [nsFilter, setNsFilter] = useState('')
-  const [visibility, setVisibility] = useState('all')
+  const [namespaceFilter, setNamespaceFilter] = useState('all')
+  const [visibility, setVisibility] = useState<'all' | 'personal' | 'namespace' | 'org'>('all')
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
 
@@ -60,22 +50,24 @@ export default function Memories() {
   const isAdmin = me?.is_admin || me?.role === 'owner' || me?.role === 'admin'
   const queryClient = useQueryClient()
 
+  const debouncedSearch = useDebounce(search, 300)
+
+  const { data: namespacesData } = useQuery({
+    queryKey: ['namespaces-for-filter'],
+    queryFn: () => api.listNamespaces(100),
+    staleTime: 60_000,
+  })
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['memories', search, nsFilter, visibility],
+    queryKey: ['memories', { search: debouncedSearch, namespace: namespaceFilter, visibility }],
     queryFn: () =>
       api.listMemories({
         limit: 100,
-        query: search || undefined,
-        namespace: nsFilter || undefined,
-        visibility: visibility === 'all' ? undefined : visibility,
+        query: debouncedSearch || undefined,
+        namespace: namespaceFilter === 'all' ? undefined : namespaceFilter,
+        visibility: visibility === 'all' ? undefined : (visibility as 'personal' | 'namespace' | 'org'),
       }),
     placeholderData: prev => prev,
-  })
-
-  const { data: namespacesData } = useQuery({
-    queryKey: ['namespaces'],
-    queryFn: () => api.listNamespaces(100),
-    enabled: isAdmin,
   })
 
   const memories = data?.memories ?? []
@@ -89,15 +81,20 @@ export default function Memories() {
     value: ns.path,
   })) ?? [{ label: 'Default', value: 'default' }]
 
-  const handleCreateMemory = async (input: Parameters<typeof api.createMemory>[0]) => {
-    try {
-      await api.createMemory(input)
+  const createMutation = useMutation({
+    mutationFn: (input: Parameters<typeof api.createMemory>[0]) => api.createMemory(input),
+    onSuccess: () => {
       toast.success('Memory created successfully')
       queryClient.invalidateQueries({ queryKey: ['memories'] })
-    } catch (err) {
+      setCreateDialogOpen(false)
+    },
+    onError: (err) => {
       toast.error(err instanceof Error ? err.message : 'Failed to create memory')
-      throw err
-    }
+    },
+  })
+
+  const handleCreateMemory = async (input: Parameters<typeof api.createMemory>[0]): Promise<void> => {
+    await createMutation.mutateAsync(input)
   }
 
   if (error) {
@@ -132,13 +129,20 @@ export default function Memories() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <Input
-              className="max-w-xs"
-              placeholder="Filter by namespace…"
-              value={nsFilter}
-              onChange={e => setNsFilter(e.target.value)}
-            />
-            <Select value={visibility} onValueChange={setVisibility}>
+            <Select value={namespaceFilter} onValueChange={setNamespaceFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All namespaces" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All namespaces</SelectItem>
+                {namespacesData?.namespaces.map(ns => (
+                  <SelectItem key={ns.path} value={ns.path}>
+                    {ns.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={visibility} onValueChange={(val) => setVisibility(val as typeof visibility)}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Visibility" />
               </SelectTrigger>
@@ -214,22 +218,15 @@ export default function Memories() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        style={{
-                          background: VISIBILITY_STYLES[mem.visibility].bg,
-                          color: VISIBILITY_STYLES[mem.visibility].color,
-                        }}
-                      >
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold', VISIBILITY_STYLES[mem.visibility].className)}>
+                        <span aria-label={VISIBILITY_STYLES[mem.visibility].label}>
+                          {VISIBILITY_STYLES[mem.visibility].icon}
+                        </span>
                         {VISIBILITY_STYLES[mem.visibility].label}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        style={{
-                          background: KIND_COLORS[mem.kind],
-                          color: 'var(--text-primary)',
-                        }}
-                      >
+                      <Badge className={KIND_COLORS[mem.kind]}>
                         {mem.kind}
                       </Badge>
                     </TableCell>
@@ -268,27 +265,19 @@ export default function Memories() {
               <Badge variant="outline" className="text-xs font-mono">
                 NS: {selectedMemory?.namespace}
               </Badge>
-              {selectedMemory?.visibility && (
-                <Badge
-                  style={{
-                    background: VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].bg,
-                    color: VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].color,
-                  }}
-                >
-                  {VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].label}
-                </Badge>
-              )}
-              {selectedMemory?.kind && (
-                <Badge
-                  style={{
-                    background:
-                      KIND_COLORS[selectedMemory.kind as Memory['kind']],
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {selectedMemory.kind}
-                </Badge>
-              )}
+               {selectedMemory?.visibility && (
+                 <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold', VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].className)}>
+                   <span aria-label={VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].label}>
+                     {VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].icon}
+                   </span>
+                   {VISIBILITY_STYLES[selectedMemory.visibility as keyof typeof VISIBILITY_STYLES].label}
+                 </span>
+               )}
+               {selectedMemory?.kind && (
+                 <Badge className={KIND_COLORS[selectedMemory.kind as Memory['kind']]}>
+                   {selectedMemory.kind}
+                 </Badge>
+               )}
               {selectedMemory?.observation_type && (
                 <Badge variant="secondary">
                   {selectedMemory.observation_type}
@@ -322,13 +311,13 @@ export default function Memories() {
                 </div>
               </div>
             )}
-            <div
-              className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-border"
-            >
-              <div>
-                <span className="text-muted-foreground">Confidence: </span>
-                <span>{selectedMemory?.confidence.toFixed(2)}</span>
-              </div>
+             <div
+               className="grid grid-cols-2 gap-4 text-sm pt-4 border-t border-border"
+             >
+               <div>
+                 <span className="text-muted-foreground">Confidence: </span>
+                 <span>{selectedMemory?.confidence?.toFixed?.(2) ?? 'N/A'}</span>
+               </div>
               <div>
                 <span className="text-muted-foreground">Importance: </span>
                 <span>{selectedMemory?.importance.toFixed(2)}</span>
