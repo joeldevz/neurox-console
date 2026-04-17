@@ -3,7 +3,6 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Plus, Search, AlertCircle, Brain, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageLayout } from '@/components/layout'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -90,20 +89,25 @@ export default function Memories() {
   return (
     <PageLayout title="Memories">
       {/* Hero */}
-      <section className="mb-6">
+      <section className="pt-2 pb-8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary tracking-tight">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
+              Knowledge base
+            </p>
+            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
               Memories
             </h1>
-            <p className="text-sm text-text-tertiary mt-1">
-              {data ? `${memories.length} result${memories.length === 1 ? '' : 's'}` : 'Browse and search all stored memories'}
+            <p className="text-sm text-text-secondary mt-3">
+              {data
+                ? `${memories.length} ${memories.length === 1 ? 'result' : 'results'} across your organization.`
+                : 'Browse and search stored memories.'}
             </p>
           </div>
           <Button
             onClick={() => setCreateDialogOpen(true)}
             disabled={!isAdmin || !orgMemoryCapability.supported}
-            className="shrink-0"
+            className="shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(124,106,247,0.35)]"
           >
             <Plus className="w-4 h-4" />
             New shared memory
@@ -121,14 +125,15 @@ export default function Memories() {
         </Alert>
       )}
 
-      {/* Filter bar — elevated card */}
-      <section className="mb-4 p-3 bg-surface-2 border border-border-default rounded-xl">
+      {/* Filter bar — sits on surface-2 with obvious card treatment */}
+      <div className="mb-3 bg-surface-2 ring-1 ring-border-subtle rounded-xl p-3 shadow-[0_1px_0_rgba(255,255,255,0.02)_inset,0_8px_24px_rgba(0,0,0,0.4)]">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search */}
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
-            <Input
-              className="pl-9 bg-surface-3 border-border-default focus-visible:border-brand-400"
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none z-10" />
+            <input
+              type="text"
+              className="w-full h-10 pl-9 pr-8 rounded-lg bg-surface-3 ring-1 ring-border-default text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-brand-400 focus:ring-2 transition-shadow"
               placeholder="Search memories…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -138,7 +143,7 @@ export default function Memories() {
                 type="button"
                 onClick={() => setSearch('')}
                 aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-surface-4"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-surface-4 z-10"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -147,7 +152,7 @@ export default function Memories() {
 
           {/* Namespace filter */}
           <Select value={namespaceFilter} onValueChange={setNamespaceFilter}>
-            <SelectTrigger className="w-48 bg-surface-3 border-border-default">
+            <SelectTrigger className="w-48 h-10 bg-surface-3 ring-1 ring-border-default border-0 text-text-primary hover:bg-surface-4 transition-colors">
               <SelectValue placeholder="All namespaces" />
             </SelectTrigger>
             <SelectContent>
@@ -162,7 +167,7 @@ export default function Memories() {
 
           {/* Visibility filter */}
           <Select value={visibility} onValueChange={(val) => setVisibility(val as typeof visibility)}>
-            <SelectTrigger className="w-40 bg-surface-3 border-border-default">
+            <SelectTrigger className="w-40 h-10 bg-surface-3 ring-1 ring-border-default border-0 text-text-primary hover:bg-surface-4 transition-colors">
               <SelectValue placeholder="Visibility" />
             </SelectTrigger>
             <SelectContent>
@@ -179,11 +184,11 @@ export default function Memories() {
             Only admins and owners can create shared memories.
           </p>
         )}
-      </section>
+      </div>
 
       {/* Results */}
       {isLoading ? (
-        <div className="bg-surface-2 border border-border-default rounded-xl p-6">
+        <div className="bg-surface-2 ring-1 ring-border-subtle rounded-xl p-6 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full bg-surface-3" />
@@ -193,11 +198,11 @@ export default function Memories() {
       ) : !hasMemories ? (
         <EmptyState onCreate={() => setCreateDialogOpen(true)} disabled={!isAdmin || !orgMemoryCapability.supported} />
       ) : (
-        <section className="bg-surface-2 border border-border-default rounded-xl overflow-hidden">
+        <section className="bg-surface-2 ring-1 ring-border-subtle rounded-xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-3">
-                <tr className="border-b border-border-default">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr>
                   <Th>Title</Th>
                   <Th>Namespace</Th>
                   <Th>Visibility</Th>
@@ -208,14 +213,11 @@ export default function Memories() {
                 </tr>
               </thead>
               <tbody>
-                {memories.map((mem, idx) => (
+                {memories.map(mem => (
                   <tr
                     key={mem.id}
                     onClick={() => setSelectedMemory(mem)}
-                    className={cn(
-                      'cursor-pointer transition-colors hover:bg-surface-3',
-                      idx !== memories.length - 1 && 'border-b border-border-subtle'
-                    )}
+                    className="cursor-pointer transition-colors hover:bg-surface-3"
                   >
                     <Td>
                       <span className="font-medium text-text-primary" title={mem.title}>
@@ -223,7 +225,7 @@ export default function Memories() {
                       </span>
                     </Td>
                     <Td>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-3 text-text-secondary text-xs font-mono border border-border-subtle">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-surface-4 text-text-secondary text-xs font-mono">
                         {mem.namespace}
                       </span>
                     </Td>
@@ -359,7 +361,7 @@ function Th({
   return (
     <th
       className={cn(
-        'px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary',
+        'px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-tertiary whitespace-nowrap',
         align === 'right' ? 'text-right' : 'text-left'
       )}
     >
@@ -376,7 +378,12 @@ function Td({
   align?: 'left' | 'right'
 }) {
   return (
-    <td className={cn('px-4 py-3 align-middle', align === 'right' ? 'text-right' : 'text-left')}>
+    <td
+      className={cn(
+        'px-5 py-3.5 align-middle',
+        align === 'right' ? 'text-right' : 'text-left'
+      )}
+    >
       {children}
     </td>
   )
@@ -393,7 +400,7 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 function EmptyState({ onCreate, disabled }: { onCreate: () => void; disabled: boolean }) {
   return (
-    <section className="bg-surface-2 border border-border-default rounded-xl p-12 text-center">
+    <section className="bg-surface-2 ring-1 ring-border-subtle rounded-xl p-12 text-center shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
       <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-surface-3 flex items-center justify-center">
         <Brain className="w-6 h-6 text-text-tertiary" />
       </div>

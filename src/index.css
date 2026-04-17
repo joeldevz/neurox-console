@@ -8,13 +8,13 @@
 
 :root {
   /* ── SURFACES ─────────────────────────────────────────── */
-  /* Clear step contrast between levels (Fey-like separation) */
+  /* Big step contrast — cards must be obviously lifted from page */
   --surface-0: #000000;   /* page background — true black */
-  --surface-1: #0a0a0a;   /* subtle alt */
-  --surface-2: #121212;   /* cards — visible step up */
-  --surface-3: #1a1a1a;   /* hover / row stripe */
-  --surface-4: #242424;   /* active / tab selected */
-  --surface-5: #2e2e2e;   /* inputs, elevated */
+  --surface-1: #0e0e0e;   /* subtle alt */
+  --surface-2: #171717;   /* cards — clearly lifted */
+  --surface-3: #212121;   /* hover / row stripe */
+  --surface-4: #2a2a2a;   /* active / tab selected / badges */
+  --surface-5: #323232;   /* inputs, elevated */
 
   /* ── TEXT ─────────────────────────────────────────────── */
   --text-primary:   #f5f5f5;
@@ -24,10 +24,10 @@
   --text-inverse:   #ffffff;
 
   /* ── BORDERS ──────────────────────────────────────────── */
-  /* Solid colors — must be visibly brighter than surface backgrounds */
-  --border-subtle:  #222222;   /* default card border */
-  --border-default: #2e2e2e;   /* emphasized border, inputs */
-  --border-strong:  #3a3a3a;   /* strong dividers */
+  /* Visibly brighter than any surface */
+  --border-subtle:  #2a2a2a;   /* default card border — same as surface-4 for clean offset */
+  --border-default: #363636;   /* emphasized border, inputs */
+  --border-strong:  #4a4a4a;   /* strong dividers */
 
   /* ── BRAND ────────────────────────────────────────────── */
   --brand-400: #9984ff;
@@ -199,6 +199,22 @@ main {
     padding-left: 32px !important;
     padding-right: 32px !important;
   }
+}
+
+/* Make card-style sections always visibly separated from page bg.
+   Use with any element that has both bg-surface-2 or bg-surface-3. */
+.bg-surface-2,
+.bg-surface-3 {
+  /* Nothing — keep background solid */
+}
+
+/* Tables inside card sections: ensure header row is clearly darker */
+table thead tr {
+  background-color: var(--surface-3);
+}
+
+table tbody tr + tr {
+  border-top: 1px solid var(--border-subtle);
 }
 
 /* Focus visible */
