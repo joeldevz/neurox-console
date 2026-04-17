@@ -8,13 +8,13 @@
 
 :root {
   /* ── SURFACES ─────────────────────────────────────────── */
-  /* Slightly lifted from pure black so cards contrast with page */
-  --surface-0: #050505;
-  --surface-1: #0c0c0c;
-  --surface-2: #141414;
-  --surface-3: #1c1c1c;
-  --surface-4: #242424;
-  --surface-5: #2a2a2a;
+  /* Clear step contrast between levels (Fey-like separation) */
+  --surface-0: #000000;   /* page background — true black */
+  --surface-1: #0a0a0a;   /* subtle alt */
+  --surface-2: #121212;   /* cards — visible step up */
+  --surface-3: #1a1a1a;   /* hover / row stripe */
+  --surface-4: #242424;   /* active / tab selected */
+  --surface-5: #2e2e2e;   /* inputs, elevated */
 
   /* ── TEXT ─────────────────────────────────────────────── */
   --text-primary:   #f5f5f5;
@@ -24,10 +24,10 @@
   --text-inverse:   #ffffff;
 
   /* ── BORDERS ──────────────────────────────────────────── */
-  /* Solid colors (not alpha) so they always render consistently over any surface */
-  --border-subtle:  #1f1f1f;
-  --border-default: #2a2a2a;
-  --border-strong:  #383838;
+  /* Solid colors — must be visibly brighter than surface backgrounds */
+  --border-subtle:  #222222;   /* default card border */
+  --border-default: #2e2e2e;   /* emphasized border, inputs */
+  --border-strong:  #3a3a3a;   /* strong dividers */
 
   /* ── BRAND ────────────────────────────────────────────── */
   --brand-400: #9984ff;
