@@ -47,17 +47,41 @@ export default function Memories() {
     staleTime: 60_000,
   })
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['memories', { search: debouncedSearch, namespace: namespaceFilter, visibility }],
+  // Strategy:
+  // - When there's a search query, use /memories/search (semantic: FTS + cosine similarity when embedder is available)
+  // - When there's no query, use /memories (listing with filters)
+  const hasSearchQuery = debouncedSearch.trim().length > 0
+
+  const listQuery = useQuery({
+    queryKey: ['memories', 'list', { namespace: namespaceFilter, visibility }],
     queryFn: () =>
       api.listMemories({
         limit: 100,
-        query: debouncedSearch || undefined,
         namespace: namespaceFilter === 'all' ? undefined : namespaceFilter,
         visibility: visibility === 'all' ? undefined : (visibility as 'personal' | 'namespace' | 'org'),
       }),
+    enabled: !hasSearchQuery,
     placeholderData: prev => prev,
   })
+
+  const searchQuery = useQuery({
+    queryKey: ['memories', 'search', { q: debouncedSearch, namespace: namespaceFilter }],
+    queryFn: async () => {
+      const res = await api.searchMemories({
+        query: debouncedSearch,
+        namespaces: namespaceFilter === 'all' ? undefined : [namespaceFilter],
+        limit: 50,
+      })
+      // Shape like listMemories so the rest of the UI is identical
+      return { memories: res.results, count: res.count }
+    },
+    enabled: hasSearchQuery,
+    placeholderData: prev => prev,
+  })
+
+  const data = hasSearchQuery ? searchQuery.data : listQuery.data
+  const isLoading = hasSearchQuery ? searchQuery.isLoading : listQuery.isLoading
+  const error = hasSearchQuery ? searchQuery.error : listQuery.error
 
   const memories = data?.memories ?? []
   const hasMemories = memories.length > 0
