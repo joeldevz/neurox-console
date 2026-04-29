@@ -8,14 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -130,21 +122,17 @@ export default function Users() {
     <PageLayout title="Users">
       {/* Hero */}
       <section className="pb-8">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary mb-3">
-              Team
-            </p>
-            <h1 className="text-[32px] leading-none font-semibold text-text-primary tracking-[-0.02em]">
-              Users
-            </h1>
-            <p className="text-sm text-text-secondary mt-3">
-              {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'} in your organization.
-            </p>
-          </div>
+        <div className="section">
+          <div className="section-title">Team</div>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 42, letterSpacing: '-0.02em', color: 'var(--color-ink)', marginBottom: 12 }}>
+            Users
+          </h1>
+          <p style={{ color: 'var(--color-ink-3)', fontSize: 14, marginBottom: 24 }}>
+            {filteredUsers.length} {filteredUsers.length === 1 ? 'member' : 'members'} in your organization.
+          </p>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="shrink-0 shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_2px_8px_rgba(124,106,247,0.35)]">
+              <Button className="btn-primary">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Add User
               </Button>
@@ -194,12 +182,12 @@ export default function Users() {
 
       <div className="space-y-4">
         {/* Filter bar */}
-        <div className="card-surface p-3 mb-3">
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none z-10" />
+        <div style={{ background: 'var(--color-paper-2)', padding: 12, borderRadius: 8 }}>
+          <div className="search-wrap">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none z-10" style={{ color: 'var(--color-ink-3)' }} />
             <input
               type="text"
-              className="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-3 ring-1 ring-border-default text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-brand-400 focus:ring-2 transition-shadow"
+              className="input"
               placeholder="Search by email or name…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -210,27 +198,27 @@ export default function Users() {
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
-          <div className="card-surface overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email / Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Email / Name</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th style={{ width: 48 }}></th>
+                </tr>
+              </thead>
+              <tbody>
                 {filteredUsers.map(user => (
-                  <TableRow key={user.id} className="hover:bg-surface-3 transition-colors">
-                    <TableCell className="px-5 py-4">
+                  <tr key={user.id}>
+                    <td style={{ paddingLeft: 20, paddingRight: 20 }}>
                       <div>
-                        <p className="text-sm font-medium text-text-primary">{user.email}</p>
-                        {user.name && <p className="text-xs text-text-tertiary">{user.name}</p>}
+                        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-ink)' }}>{user.email}</p>
+                        {user.name && <p style={{ fontSize: 12, color: 'var(--color-ink-3)' }}>{user.name}</p>}
                       </div>
-                    </TableCell>
-                    <TableCell className="px-5 py-4">
+                    </td>
+                    <td style={{ paddingLeft: 20, paddingRight: 20 }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
@@ -270,16 +258,16 @@ export default function Users() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                    <TableCell className="px-5 py-4">
+                    </td>
+                    <td style={{ paddingLeft: 20, paddingRight: 20 }}>
                       <span className={cn('px-2 py-0.5 rounded text-xs font-semibold capitalize', STATUS_COLORS[user.status])}>
                         {user.status}
                       </span>
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-text-secondary">
+                    </td>
+                    <td style={{ paddingLeft: 20, paddingRight: 20, color: 'var(--color-ink-3)' }}>
                       {formatDate(user.created_at)}
-                    </TableCell>
-                    <TableCell className="px-5 py-4 text-right">
+                    </td>
+                    <td style={{ paddingLeft: 20, paddingRight: 20, textAlign: 'right' }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" disabled={isRowPending(user.id)}>
@@ -313,11 +301,11 @@ export default function Users() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         )}
 
